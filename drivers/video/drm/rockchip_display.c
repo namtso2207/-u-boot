@@ -432,7 +432,7 @@ static int display_get_timing_from_dts(struct rockchip_panel *panel,
 
 	mcu_panel = dev_read_subnode(panel->dev, "mcu-panel");
 
-	if(namtso_mipi_id == 1){//TS101
+    if(namtso_mipi_id == 2){//TS101
 	       dt = dev_read_subnode(panel->dev, "display-timings1");
 	}else{//TS050
 	       dt = dev_read_subnode(panel->dev, "display-timings");
@@ -487,7 +487,7 @@ static int display_get_timing_from_dts(struct rockchip_panel *panel,
 #define TP05_CHIP_ADDR "0x38"
 #define TP10_CHIP_ADDR "0x14"
 static struct udevice *i2c_cur_bus;
-int namtso_mipi_id = 0;//TS050
+int namtso_mipi_id = 0;
 
 static int cmd_i2c_set_bus_num(unsigned int busnum)
 {
@@ -1967,21 +1967,21 @@ static int rockchip_display_probe(struct udevice *dev)
 			namtso_mipi_id = kbi_i2c_read(0xfe,TP05_CHIP_ADDR);
 			printf("TP05 id=0x%x\n",namtso_mipi_id);
 			if(namtso_mipi_id > 0x10){//TS050 = 0x1f
-				namtso_mipi_id = 0;
+				namtso_mipi_id = 1;
 			}else{
 				namtso_mipi_id = kbi_i2c_read(0x9e,TP10_CHIP_ADDR);
 				printf("TP10 id=0x%x\n",namtso_mipi_id);
 				if(namtso_mipi_id == 0x00){//TS101
-					namtso_mipi_id = 1;
+					namtso_mipi_id = 2;
 				}else {
 					namtso_mipi_id = 0;
 				}
 			}
 			first_flag = 0;
-			//printf("hlm namtso_mipi_id=%d\n",namtso_mipi_id);
+			printf("hlm namtso_mipi_id=%d\n",namtso_mipi_id);
 		}
 		if(s->crtc_state.crtc_id == 0){
-			ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);
+			ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);//0 degrees
 			if (!ret)
 				memcpy(s->ulogo_name, name, strlen(name));
 
@@ -1990,19 +1990,19 @@ static int rockchip_display_probe(struct udevice *dev)
 				memcpy(s->klogo_name, name, strlen(name));
 		}
 		else{
-			if(namtso_mipi_id == 0){
-				ret = ofnode_read_string_index(node, "logo,kernel", 0, &name);
+			if(namtso_mipi_id == 2){
+				ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);//0 degrees
 				if (!ret)
 					memcpy(s->ulogo_name, name, strlen(name));
-				ret = ofnode_read_string_index(node, "logo,kernel", 0, &name);
+				ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);
 				if (!ret)
 					memcpy(s->klogo_name, name, strlen(name));
 			}
 			else{
-				ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);
+				ret = ofnode_read_string_index(node, "logo,kernel", 0, &name);//90 degrees
 				if (!ret)
 					memcpy(s->ulogo_name, name, strlen(name));
-				ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);
+				ret = ofnode_read_string_index(node, "logo,kernel", 0, &name);
 				if (!ret)
 					memcpy(s->klogo_name, name, strlen(name));
 			}
