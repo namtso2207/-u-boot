@@ -99,7 +99,8 @@ int rk_board_init(void)
 	run_command("gpio set 75", 0);		//GPIO2_B3
 	run_command("gpio set 78", 0);		//GPIO2_B6
 	run_command("gpio set 76", 0);		//GPIO2_B4
-	run_command("gpio set 79", 0);		//GPIO2_B7
+	//run_command("gpio set 79", 0);	//GPIO2_B7
+	run_command("gpio clear 79", 0);	//GPIO2_B7
 	run_command("gpio set 85", 0);		//GPIO2_C5
 	run_command("gpio clear 77", 0);	//GPIO2_B5
 	run_command("gpio set 137", 0);		//GPIO4_B1
