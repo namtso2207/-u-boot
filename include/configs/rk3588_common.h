@@ -85,6 +85,16 @@
 	"partitions=" PARTS_RKIMG \
 	ROCKCHIP_DEVICE_SETTINGS \
 	RKIMG_DET_BOOTDEV \
+	"wol_init="\
+	"nbi init;"\
+	"nbi powerstate;"\
+	"nbi trigger wol r;"\
+	"setenv bootargs ${bootargs} wol_enable=${wol_enable};"\
+	"if test ${power_state} = 1; then "\
+		"nbi trigger wol w 1;"\
+		"nbi poweroff;"\
+	"fi;"\
+	"\0"\
 	BOOTENV
 #endif
 
@@ -92,7 +102,8 @@
 #define CONFIG_USB_OHCI_NEW
 #define CONFIG_SYS_USB_OHCI_MAX_ROOT_PORTS	1
 
-#define CONFIG_PREBOOT
+#define CONFIG_PREBOOT \
+	"run wol_init;"
 #define CONFIG_LIB_HW_RAND
 
 #endif

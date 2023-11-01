@@ -68,7 +68,6 @@
 #define BOOT_MODE_SD			2
 
 #define FORCERESET_WOL			0
-#define FORCERESET_GPIO			1
 
 #define VERSION_LENGHT			2
 #define USID_LENGHT				6
@@ -255,6 +254,10 @@ static void set_wol(bool is_shutdown, int enable)
 				nbi_i2c_read_block(REG_MAC, MAC_LENGHT, mac_addr);
 			}
 		}
+
+		printf("mac: %x:%x:%x:%x:%x:%x\n", mac_addr[0], mac_addr[1], mac_addr[2],
+			mac_addr[3], mac_addr[4], mac_addr[5]);
+
 		run_command("mdio write ethernet@fe1c0000 0x1f 0xd8c", 0);
 		sprintf(cmd, "mdio write ethernet@fe1c0000 0x10 0x%x%x", mac_addr[1], mac_addr[0]);
 		run_command(cmd, 0);
@@ -296,8 +299,9 @@ static void set_wol(bool is_shutdown, int enable)
 
 	run_command("i2c dev 1", 0);
 	sprintf(cmd, "i2c mw %x %x %d 1", CHIP_ADDR, REG_BOOT_EN_WOL, enable);
+	printf("write reg: [%d]  val:[%d]\n", REG_BOOT_EN_WOL, enable);
 	run_command(cmd, 0);
-	printf("%s: %d\n", __func__, enable);
+	
 }
 
 static void get_rtc(void)
@@ -572,9 +576,16 @@ static void get_usid(void)
 
 static int do_nbi_init(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
+	int enable = 0;
 	// switch to i2c1
+
+	printf("do_nbi_init\n");
+
 	run_command("i2c dev 1", 0);
 
+	enable = get_wol(true);
+	if ((enable&0x01) != 0)
+		set_wol(false, enable);
 	return 0;
 }
 
@@ -820,8 +831,18 @@ static int do_nbi_fan_auto_test(cmd_tbl_t * cmdtp, int flag, int argc, char * co
 static int do_nbi_wol_init(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
 	char cmd[64];
+	run_command("i2c dev 1", 0);
+
+	int val;
+	val = nbi_i2c_read(REG_INIT_WOL);
+	printf("nbi wol init: %d: [0x%x]\n", val, val);
+
 	sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, REG_INIT_WOL, 0);
+	printf("nbi wol init\n");
 	run_command(cmd, 0);
+
+	val = nbi_i2c_read(REG_INIT_WOL);
+	printf("nbi wol init: %d: [0x%x]\n", val, val);
 	return 0;
 }
 
@@ -838,10 +859,150 @@ static int do_nbi_sys_status(cmd_tbl_t * cmdtp, int flag, int argc, char * const
 	return 0;
 }
 
+static void get_power_state(void)
+{
+	int val;
+	val = nbi_i2c_read(REG_SYS_OOPS);
+	if (val == 1) {
+		printf("abort power off\n");
+		env_set("power_state","1");
+	} else if (val == 0) {
+		printf("normal power off\n");
+		env_set("power_state","0");
+	} else {
+		printf("state err\n");
+		env_set("power_state","f");
+	}
+}
+
+static int do_nbi_powerstate(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
+{
+	get_power_state();
+	return 0;
+}
+
+#include <power/pmic.h>
+static void set_poweroff(void)
+{
+	struct udevice * dev;
+	//char devctrl_reg = 0x72;
+
+	pmic_get("rk806single@0", &dev);
+	pmic_shutdown(dev);
+
+#if 0
+
+#ifdef CONFIG_DM_I2C
+	struct udevice *dev;
+	u8 val;
+	int ret = 0;
+
+	cmd_i2c_set_bus_num(1);
+	ret = i2c_get_cur_bus_chip(0x1b, &dev);
+	if (!ret)
+		ret = dm_i2c_read(dev, devctrl_reg, &val, 1);
+
+	if (ret) {
+		printf("%s: read reg 0x%02x failed, ret=%d\n", __func__, devctrl_reg, ret);
+		goto error;
+	}
+
+	val |= (1 << 3);
+	ret = dm_i2c_write(dev, devctrl_reg, &val, 1);
+	if (ret) {
+		printf("%s: write reg 0x%02x failed, ret=%d\n", __func__, devctrl_reg, ret);
+		goto error;
+	}
+error:
+	cmd_i2c_set_bus_num(1);
+#else
+	u8 reg;
+
+	i2c_set_bus_num(1);
+	reg = i2c_reg_read(0x1b, devctrl_reg);
+	i2c_reg_write(0x1b, devctrl_reg, (reg |(0x1 <<3)));
+	i2c_set_bus_num(1);
+#endif
+
+#endif
+
+}
+
+static int do_nbi_poweroff(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
+{
+	printf("System poweroff\n");
+	int enable = get_wol(false);
+	if ((enable&0x03) != 0)
+		set_wol(true, enable);
+	set_poweroff();
+	return 0;
+}
+
+static int get_forcereset_wol(bool is_print)
+{
+	int enable;
+	enable = nbi_i2c_read(REG_BOOT_EN_WOL);
+	if (is_print)
+		printf("wol forcereset: %s\n", enable&0x02 ? "enable":"disable");
+	env_set("wol_forcereset", enable&0x02 ? "1" : "0");
+	return enable;
+
+}
+
+static void get_forcereset_enable(int type)
+{
+	if (type == FORCERESET_WOL)
+		get_forcereset_wol(true);
+	else
+		printf("get forcereset err=%d\n", type);
+}
+
+static int set_forcereset_enable(int type, int enable)
+{
+	int state = 0;
+	if (type == FORCERESET_WOL)
+	{
+		state = get_forcereset_wol(true);
+		set_wol(false, (state&0x01)|(enable<<1));
+	} else {
+		printf("set forcereset err=%d\n", type);
+		return CMD_RET_USAGE;
+	}
+	return 0;
+}
+
+static int do_kbi_forcereset(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
+{
+	int ret = 0;
+	if (argc < 3)
+		return CMD_RET_USAGE;
+
+	if (strcmp(argv[1], "wol") ==0) {
+		if (strcmp(argv[2], "r") == 0) {
+			get_forcereset_enable(FORCERESET_WOL);
+		} else if (strcmp(argv[2], "w") == 0) {
+			if (argc < 4)
+				return CMD_RET_USAGE;
+			if (strcmp(argv[3], "1") == 0) {
+				ret = set_forcereset_enable(FORCERESET_WOL, 1);
+			} else if (strcmp(argv[3], "0") == 0) {
+				ret = set_forcereset_enable(FORCERESET_WOL, 0);
+			} else {
+				ret =  CMD_RET_USAGE;
+			}
+		}
+	} else {
+		return CMD_RET_USAGE;
+	}
+	return ret;
+}
+
 static cmd_tbl_t cmd_nbi_sub[] = {
 	U_BOOT_CMD_MKENT(init, 1, 1, do_nbi_init, "", ""),
 	U_BOOT_CMD_MKENT(usid, 1, 1, do_nbi_usid, "", ""),
 	U_BOOT_CMD_MKENT(version, 1, 1, do_nbi_version, "", ""),
+	U_BOOT_CMD_MKENT(powerstate, 1, 1, do_nbi_powerstate, "", ""),
+	U_BOOT_CMD_MKENT(poweroff, 1, 1, do_nbi_poweroff, "", ""),
 	U_BOOT_CMD_MKENT(bootmode, 3, 1, do_nbi_bootmode, "", ""),
 	U_BOOT_CMD_MKENT(switchmac, 3, 1, do_nbi_switchmac, "", ""),
 	U_BOOT_CMD_MKENT(led, 4, 1, do_nbi_led, "", ""),
@@ -852,6 +1013,7 @@ static cmd_tbl_t cmd_nbi_sub[] = {
 	U_BOOT_CMD_MKENT(wol_init, 1, 1, do_nbi_wol_init, "", ""),
 	U_BOOT_CMD_MKENT(sys_status, 1, 1, do_nbi_sys_status, "", ""),
 	U_BOOT_CMD_MKENT(trigger, 4, 1, do_nbi_trigger, "", ""),
+	U_BOOT_CMD_MKENT(forcereset, 4, 1, do_kbi_forcereset, "", ""),
 };
 
 static int do_nbi(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
