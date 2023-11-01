@@ -102,6 +102,7 @@ int rk_board_init(void)
 	run_command("gpio set 79", 0);		//GPIO2_B7
 	run_command("gpio set 85", 0);		//GPIO2_C5
 	run_command("gpio clear 77", 0);	//GPIO2_B5
+	run_command("gpio set 137", 0);		//GPIO4_B1
 
 	ret = uclass_get_device_by_seq(UCLASS_I2C, TP_I2C_BUS_NUM, &bus);
 	if (ret) {
