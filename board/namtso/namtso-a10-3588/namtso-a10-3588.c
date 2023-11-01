@@ -96,6 +96,13 @@ int rk_board_init(void)
 	struct udevice *dev;
 	uchar linebuf[1];
 
+	run_command("gpio set 75", 0);		//GPIO2_B3
+	run_command("gpio set 78", 0);		//GPIO2_B6
+	run_command("gpio set 76", 0);		//GPIO2_B4
+	run_command("gpio set 79", 0);		//GPIO2_B7
+	run_command("gpio set 85", 0);		//GPIO2_C5
+	run_command("gpio clear 77", 0);	//GPIO2_B5
+
 	ret = uclass_get_device_by_seq(UCLASS_I2C, TP_I2C_BUS_NUM, &bus);
 	if (ret) {
 		printf("%s: No bus %d\n", __func__, TP_I2C_BUS_NUM);
