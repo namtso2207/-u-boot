@@ -95,6 +95,12 @@
 		"nbi poweroff;"\
 	"fi;"\
 	"\0"\
+	"check_reboot_mode=" \
+	"if test X${reboot_mode} = Xreboot_test; then "\
+		"echo Reboot test mode detected;"\
+		"setenv bootargs ${bootargs} reboot_test;" \
+	"fi;"\
+	"\0"\
 	BOOTENV
 #endif
 
@@ -103,7 +109,8 @@
 #define CONFIG_SYS_USB_OHCI_MAX_ROOT_PORTS	1
 
 #define CONFIG_PREBOOT \
-	"run wol_init;"
+	"run wol_init;" \
+	"run check_reboot_mode;"
 #define CONFIG_LIB_HW_RAND
 
 #endif
