@@ -716,7 +716,9 @@ static int initr_net(void)
 	reset_phy();
 #endif
 	run_command("nbi wol_init", 0);
-	run_command("dhcp", 0);
+	eth_halt();
+	eth_set_current();
+	eth_init();
 	return 0;
 }
 #endif
