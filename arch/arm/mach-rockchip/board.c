@@ -86,10 +86,16 @@ __weak int set_armclk_rate(void)
 	return 0;
 }
 
+extern int kbi_i2c_read(uint reg);
 __weak int rk_board_init(void)
 {
-	run_command("gpio set 130", 0);//GPIO4_A2 vcc 5v
-        run_command("gpio set 100", 0);//GPIO3_A4 TYPEC0_PWR_EN
+	if(kbi_i2c_read(0x88)){
+		run_command("gpio set 79", 0);  //PCIEX1_0_SEL GPIO2_B7 WIFI
+		printf("%s switch wifi\n", __func__);
+	} else {
+		run_command("gpio clear 79", 0);  //PCIEX1_0_SEL GPIO2_B7 LINK
+		printf("%s switch link\n", __func__);
+	}
 	return 0;
 }
 
