@@ -64,6 +64,9 @@ const uchar default_environment[] = {
 #ifdef	CONFIG_PREBOOT
 	"preboot="	CONFIG_PREBOOT			"\0"
 #endif
+#ifdef	CONFIG_CHECKEDP
+	"checkedp="	CONFIG_CHECKEDP			"\0"
+#endif
 #ifdef	CONFIG_ROOTPATH
 	"rootpath="	CONFIG_ROOTPATH			"\0"
 #endif

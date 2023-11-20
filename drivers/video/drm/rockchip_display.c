@@ -58,7 +58,7 @@ static unsigned long cubic_lut_memory_start;
 static unsigned long memory_end;
 static struct base2_info base_parameter;
 static u32 align_size = PAGE_SIZE;
-int namtso_mipi_id = 0;
+extern int namtso_mipi_id;
 /*
  * the phy types are used by different connectors in public.
  * The current version only has inno hdmi phy for hdmi and tve.
@@ -1889,7 +1889,7 @@ static int rockchip_display_probe(struct udevice *dev)
 				memcpy(s->klogo_name, name, strlen(name));
 		}
 		else{
-			if(namtso_mipi_id == 2){
+			if(namtso_mipi_id == 2 || namtso_mipi_id == 4){
 				ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);//0 degrees
 				if (!ret)
 					memcpy(s->ulogo_name, name, strlen(name));

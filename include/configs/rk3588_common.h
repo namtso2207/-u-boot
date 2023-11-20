@@ -79,6 +79,15 @@
 	"partitions=" PARTS_RKIMG \
 	ROCKCHIP_DEVICE_SETTINGS \
 	RKIMG_DET_BOOTDEV \
+	"check_panel_mode=" \
+	"if gpio input 37; then "\
+		"echo check has Edp panel-GPIO1_A5;"\
+		"setenv namtso_mipi_id 4;"\
+	"else "\
+		"echo check no Edp panel-GPIO1_A5;"\
+		"setenv namtso_mipi_id 0;"\
+	"fi;"\
+	"\0"\
 	"check_reboot_mode=" \
 	"if test X${reboot_mode} = Xreboot_test; then "\
 		"echo Reboot test mode detected;"\
@@ -96,6 +105,8 @@
 
 #define CONFIG_PREBOOT \
 	 "run check_reboot_mode;"
+#define CONFIG_CHECKEDP \
+	 "run check_panel_mode;"
 #define CONFIG_LIB_HW_RAND
 
 #endif
