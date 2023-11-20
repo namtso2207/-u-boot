@@ -30,14 +30,38 @@
 	};
 };
 
-&i2c2 {
+&i2c0 {
 	status = "okay";
 	pinctrl-names = "default";
-	pinctrl-0 = <&i2c2m0_xfer>;
+	pinctrl-0 = <&i2c0m2_xfer>;
 };
 
-&i2c6 {
+&i2c1 {
 	status = "okay";
 	pinctrl-names = "default";
-	pinctrl-0 = <&i2c6m0_xfer>;
+	pinctrl-0 = <&i2c1m2_xfer>;
+};
+
+&i2c2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c2m4_xfer>;
+	status = "okay";
+};
+
+&i2c3 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c3m0_xfer>;
+};
+
+&i2c4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c5m0_xfer>;
+	status = "okay";
+};
+
+&i2c7 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c7m0_xfer>;
+	status = "okay";
 };
