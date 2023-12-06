@@ -96,8 +96,8 @@ __weak int rk_board_init(void)
 	p = env_get("checkedp");
 	if (p != NULL) {
 		run_command_list(p, -1, 0);
-		//run_command("gpio clear 59", 0);	//HDMI/EDP_SW GPIO1_D3 0£ºhdmi
-		run_command("gpio set 59", 0);	//HDMI/EDP_SW GPIO1_D3 1: edp
+		//run_command("gpio set 146", 0);	//HDMI/EDP_SW GPIO4_C2 1£ºhdmi
+		run_command("gpio clear 146", 0);	//HDMI/EDP_SW GPIO4_C2 0: edp
 		mode = env_get("namtso_mipi_id");
 		printf("%s hlm mode=%s\n", __func__,mode);
 		if(strcmp(mode,"4") == 0)
@@ -107,13 +107,16 @@ __weak int rk_board_init(void)
 		printf("%s hlm namtso_mipi_id=%d\n", __func__,namtso_mipi_id);
 	}
 #endif
-	if(kbi_i2c_read(0x88)){
-		run_command("gpio set 79", 0);  //PCIEX1_0_SEL GPIO2_B7 WIFI
+	if(kbi_i2c_read(0x88)){//LINK_DET_L GPIO0_C5 for v11
+		run_command("gpio set 77", 0);  //PCIEX1_0_SEL GPIO2_B5 WIFI
 		printf("%s switch wifi\n", __func__);
 	} else {
-		run_command("gpio clear 79", 0);  //PCIEX1_0_SEL GPIO2_B7 LINK
+		run_command("gpio clear 77", 0);  //PCIEX1_0_SEL GPIO2_B5 LINK
 		printf("%s switch link\n", __func__);
 	}
+	run_command("gpio set 150", 0);  //PHY_PWREN GPIO4_C6
+    //run_command("i2c dev 2", 0);
+    //run_command("i2c mw 0x6b 0x8e 0x01", 0);
 	return 0;
 }
 

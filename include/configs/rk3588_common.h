@@ -81,11 +81,11 @@
 	RKIMG_DET_BOOTDEV \
 	"check_panel_mode=" \
 	"if gpio input 37; then "\
-		"echo check has Edp panel-GPIO1_A5;"\
-		"setenv namtso_mipi_id 4;"\
-	"else "\
 		"echo check no Edp panel-GPIO1_A5;"\
 		"setenv namtso_mipi_id 0;"\
+	"else "\
+		"echo check has Edp panel-GPIO1_A5;"\
+		"setenv namtso_mipi_id 4;"\
 	"fi;"\
 	"\0"\
 	"check_reboot_mode=" \
