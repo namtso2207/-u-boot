@@ -30,6 +30,7 @@
 #define REG_BOOT_EN_LPWR		0x24
 #define REG_BOOT_EN_UPWR		0x25
 #define REG_BOOT_EN_PCIE_WOL	0x26
+#define REG_SWITCH_BT_SPI		0x27
 
 #define REG_LED_ON_SYS			0x28
 #define REG_LED_OFF_SYS			0x29
@@ -1005,6 +1006,15 @@ static int set_forcereset_enable(int type, int enable)
 	return 0;
 }
 
+static int do_nbi_switch_bt(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
+{
+	char cmd[64];
+	run_command("i2c dev 1", 0);
+	sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, REG_SWITCH_BT_SPI, 0);
+	run_command(cmd, 0);
+	return 0;
+}
+
 static int do_kbi_forcereset(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
 	int ret = 0;
@@ -1046,6 +1056,7 @@ static cmd_tbl_t cmd_nbi_sub[] = {
 	U_BOOT_CMD_MKENT(fan_auto_test, 1, 1, do_nbi_fan_auto_test, "", ""),
 	U_BOOT_CMD_MKENT(wol_init, 1, 1, do_nbi_wol_init, "", ""),
 	U_BOOT_CMD_MKENT(sys_status, 1, 1, do_nbi_sys_status, "", ""),
+	U_BOOT_CMD_MKENT(switch_bt, 1, 1, do_nbi_switch_bt, "", ""),
 	U_BOOT_CMD_MKENT(trigger, 4, 1, do_nbi_trigger, "", ""),
 	U_BOOT_CMD_MKENT(forcereset, 4, 1, do_kbi_forcereset, "", ""),
 };
