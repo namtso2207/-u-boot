@@ -104,9 +104,12 @@ int rk_board_init(void)
 	run_command("gpio set 85", 0);		//GPIO2_C5
 	//run_command("gpio set 140", 0);	//GPIO4_B4
 	run_command("gpio clear 140", 0);
-	run_command("gpio clear 77", 0);	//GPIO2_B5
+	run_command("gpio clear 77", 0);	//GPIO2_B5  set link
+	//run_command("gpio set 77", 0);	//GPIO2_B5  set wifi/bt
 	run_command("gpio set 137", 0);		//GPIO4_B1
 	run_command("gpio set 128", 0);		//GPIO4_A0
+	run_command("gpio set 150", 0);		//GPIO4_C6
+	run_command("gpio clear 146", 0);	//GPIO4_C2
 
 	pci_init();
 
