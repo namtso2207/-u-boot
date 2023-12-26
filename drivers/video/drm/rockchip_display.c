@@ -59,6 +59,7 @@ static unsigned long memory_end;
 static struct base2_info base_parameter;
 static u32 align_size = PAGE_SIZE;
 extern int namtso_mipi_id;
+extern int namtso_mipi_id2;
 /*
  * the phy types are used by different connectors in public.
  * The current version only has inno hdmi phy for hdmi and tve.
@@ -429,14 +430,24 @@ static int display_get_timing_from_dts(struct rockchip_panel *panel,
 	struct ofnode_phandle_args args;
 	ofnode dt, timing, mcu_panel;
 	int ret;
+	static bool first_flag = 0;
 
 	mcu_panel = dev_read_subnode(panel->dev, "mcu-panel");
 
-    if(namtso_mipi_id == 2){//TS101
-	       dt = dev_read_subnode(panel->dev, "display-timings1");
-	}else{//TS050
-	       dt = dev_read_subnode(panel->dev, "display-timings");
+	if(first_flag){
+		if(namtso_mipi_id2 == 2){//TS101
+			   dt = dev_read_subnode(panel->dev, "display-timings1");
+		}else{//TS050
+			   dt = dev_read_subnode(panel->dev, "display-timings");
+		}
+	} else {
+		if(namtso_mipi_id == 2){//TS101
+			   dt = dev_read_subnode(panel->dev, "display-timings1");
+		}else{//TS050
+			   dt = dev_read_subnode(panel->dev, "display-timings");
+		}
 	}
+	first_flag = !first_flag;
 	if (ofnode_valid(dt)) {
 		ret = ofnode_parse_phandle_with_args(dt, "native-mode", NULL,
 						     0, 0, &args);
@@ -1758,6 +1769,7 @@ static int rockchip_display_probe(struct udevice *dev)
 	struct device_node *port_node, *vop_node, *ep_node, *port_parent_node;
 	struct public_phy_data *data;
 	bool is_ports_node = false;
+	static bool first_flag = 0;
 
 #if defined(CONFIG_ROCKCHIP_RK3568)
 	rockchip_display_fixup_dts((void *)blob);
@@ -1878,7 +1890,7 @@ static int rockchip_display_probe(struct udevice *dev)
 		s->crtc_state.crtc = crtc;
 		s->crtc_state.crtc_id = get_crtc_id(np_to_ofnode(ep_node), is_ports_node);
 		s->node = node;
-
+printf("hlm rockchip_display_probe====== namtso_mipi_id=%d namtso_mipi_id2=%d\n",namtso_mipi_id, namtso_mipi_id2);
 		if(s->crtc_state.crtc_id == 0){
 			ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);//0 degrees
 			if (!ret)
@@ -1889,24 +1901,43 @@ static int rockchip_display_probe(struct udevice *dev)
 				memcpy(s->klogo_name, name, strlen(name));
 		}
 		else{
-			if(namtso_mipi_id == 2 || namtso_mipi_id == 4){
-				ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);//0 degrees
-				if (!ret)
-					memcpy(s->ulogo_name, name, strlen(name));
-				ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);
-				if (!ret)
-					memcpy(s->klogo_name, name, strlen(name));
-			}
-			else{
-				ret = ofnode_read_string_index(node, "logo,kernel", 0, &name);//90 degrees
-				if (!ret)
-					memcpy(s->ulogo_name, name, strlen(name));
-				ret = ofnode_read_string_index(node, "logo,kernel", 0, &name);
-				if (!ret)
-					memcpy(s->klogo_name, name, strlen(name));
+			if(first_flag){
+				if(namtso_mipi_id2 == 2 || namtso_mipi_id2 == 4){
+					ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);//0 degrees
+					if (!ret)
+						memcpy(s->ulogo_name, name, strlen(name));
+					ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);
+					if (!ret)
+						memcpy(s->klogo_name, name, strlen(name));
+				}
+				else{
+					ret = ofnode_read_string_index(node, "logo,kernel", 0, &name);//90 degrees
+					if (!ret)
+						memcpy(s->ulogo_name, name, strlen(name));
+					ret = ofnode_read_string_index(node, "logo,kernel", 0, &name);
+					if (!ret)
+						memcpy(s->klogo_name, name, strlen(name));
+				}
+			}else{
+				if(namtso_mipi_id == 2 || namtso_mipi_id == 4){
+					ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);//0 degrees
+					if (!ret)
+						memcpy(s->ulogo_name, name, strlen(name));
+					ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);
+					if (!ret)
+						memcpy(s->klogo_name, name, strlen(name));
+				}
+				else{
+					ret = ofnode_read_string_index(node, "logo,kernel", 0, &name);//90 degrees
+					if (!ret)
+						memcpy(s->ulogo_name, name, strlen(name));
+					ret = ofnode_read_string_index(node, "logo,kernel", 0, &name);
+					if (!ret)
+						memcpy(s->klogo_name, name, strlen(name));
+				}
 			}
 		}
-
+		first_flag = !first_flag;
 		if (is_ports_node) { /* only vop2 will get into here */
 			ofnode vp_node = np_to_ofnode(port_node);
 			static bool get_plane_mask_from_dts;

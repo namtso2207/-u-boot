@@ -88,6 +88,7 @@ __weak int set_armclk_rate(void)
 
 extern int kbi_i2c_read(uint reg);
 int namtso_mipi_id = 0;
+int namtso_mipi_id2 = 0;
 __weak int rk_board_init(void)
 {
 #ifdef CONFIG_CHECKEDP
@@ -104,7 +105,7 @@ __weak int rk_board_init(void)
 			namtso_mipi_id = 4;
 		else
 			namtso_mipi_id = 0;
-		printf("%s hlm namtso_mipi_id=%d\n", __func__,namtso_mipi_id);
+		printf("%s hlm namtso_mipi_id=%d namtso_mipi_id=%d\n", __func__,namtso_mipi_id,namtso_mipi_id2);
 	}
 #endif
 	if(kbi_i2c_read(0x88)){//LINK_DET_L GPIO0_C5 for v11

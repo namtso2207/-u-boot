@@ -1373,6 +1373,10 @@ int android_bootloader_boot_flow(struct blk_desc *dev_desc,
 	extern int namtso_mipi_id;
 	snprintf(lcd_id_buf, 32, "namtso_mipi_id=%d", namtso_mipi_id);
 	env_update("bootargs", lcd_id_buf);
+        char lcd_id_buf3[32] = {0};
+	extern int namtso_mipi_id2;
+        snprintf(lcd_id_buf3, 32, "namtso_mipi_id2=%d", namtso_mipi_id2);
+        env_update("bootargs", lcd_id_buf3);
 	char lcd_id_buf2[32] = {0};
 	extern int is_mipi_lcd_exit;
 	snprintf(lcd_id_buf2, 32, "is_mipi_lcd_exit=%d", is_mipi_lcd_exit);

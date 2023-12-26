@@ -60,6 +60,12 @@
 	status = "okay";
 };
 
+&i2c6 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&i2c6m2_xfer>;
+        status = "okay";
+};
+
 &i2c7 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c7m0_xfer>;

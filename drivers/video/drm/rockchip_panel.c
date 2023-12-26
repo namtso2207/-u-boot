@@ -296,6 +296,7 @@ static int rockchip_panel_send_dsi_cmds(struct mipi_dsi_device *dsi,
 }
 
 extern int namtso_mipi_id;
+extern int namtso_mipi_id2;
 static void panel_simple_prepare(struct rockchip_panel *panel)
 {
 	struct rockchip_panel_plat *plat = dev_get_platdata(panel->dev);
@@ -334,7 +335,7 @@ static void panel_simple_prepare(struct rockchip_panel *panel)
 				run_command("fdt set /display-subsystem/route/route-dsi0 status disable", 0);
 				printf("disable dsi0\n");
 			}
-			else if(3 == vpx_id && 2!=namtso_mipi_id){
+			else if(3 == vpx_id && 2!=namtso_mipi_id2){
 				is_mipi_lcd_exit = is_mipi_lcd_exit & 0x7;
 				run_command("fdt set /dsi@fde30000 status disable", 0);
 				run_command("fdt set /dsi@fde30000/panel@0 status disable", 0);
@@ -450,6 +451,7 @@ static const struct rockchip_panel_funcs rockchip_panel_funcs = {
 
 #ifdef CONFIG_DM_I2C
 #define TP_I2C_BUS_NUM 0
+#define TP2_I2C_BUS_NUM 6
 #define TP05_CHIP_ADDR "0x38"
 #define TP10_CHIP_ADDR "0x14"
 static struct udevice *i2c_cur_bus;
@@ -469,15 +471,15 @@ static int cmd_i2c_set_bus_num(unsigned int busnum)
     return 0;
 }
 
-static int i2c_get_cur_bus(struct udevice **busp)
+static int i2c_get_cur_bus(struct udevice **busp, unsigned int busnum)
 {
-	if (!i2c_cur_bus) {
-		if (cmd_i2c_set_bus_num(TP_I2C_BUS_NUM)) {
+	//if (!i2c_cur_bus) {
+		if (cmd_i2c_set_bus_num(busnum)) {
 		    printf("Default I2C bus %d not found\n",
-		           TP_I2C_BUS_NUM);
+		           busnum);
 		    return -ENODEV;
 		}
-	}
+	//}
 
     if (!i2c_cur_bus) {
         puts("No I2C bus selected\n");
@@ -488,12 +490,12 @@ static int i2c_get_cur_bus(struct udevice **busp)
     return 0;
 }
 
-static int i2c_get_cur_bus_chip(uint chip_addr, struct udevice **devp)
+static int i2c_get_cur_bus_chip(uint chip_addr, struct udevice **devp, unsigned int busnum)
 {
     struct udevice *bus;
     int ret;
 
-    ret = i2c_get_cur_bus(&bus);
+    ret = i2c_get_cur_bus(&bus, busnum);
     if (ret)
         return ret;
 
@@ -501,7 +503,7 @@ static int i2c_get_cur_bus_chip(uint chip_addr, struct udevice **devp)
 }
 #endif
 
-static int kbi_i2c_read(uint reg, const char *cp)
+static int kbi_i2c_read(unsigned int busnum, uint reg, const char *cp)
 {
 	int ret;
 	char val[64];
@@ -515,7 +517,7 @@ static int kbi_i2c_read(uint reg, const char *cp)
 	chip = simple_strtoul(cp, NULL, 16);
 
 #ifdef CONFIG_DM_I2C
-	ret = i2c_get_cur_bus_chip(chip, &dev);
+	ret = i2c_get_cur_bus_chip(chip, &dev, busnum);
 	if (!ret)
 		ret = dm_i2c_read(dev, reg, (uint8_t *)linebuf, 1);
 #else
@@ -538,7 +540,8 @@ static int rockchip_panel_ofdata_to_platdata(struct udevice *dev)
 	const void *data;
 	int len = 0;
 	int ret;
-	static bool first_flag = 1;
+	static bool first_flag = 0;
+	int tp_id;
 
 	plat->power_invert = dev_read_bool(dev, "power-invert");
 
@@ -553,55 +556,77 @@ static int rockchip_panel_ofdata_to_platdata(struct udevice *dev)
 						MEDIA_BUS_FMT_RBG888_1X24);
 	plat->bpc = dev_read_u32_default(dev, "bpc", 8);
 
-	if(first_flag){
-		printf("hlm first_flag namtso_mipi_id=%d\n", namtso_mipi_id);
-		if(namtso_mipi_id == 4){
-			run_command("fdt addr 0x08300000", 0);
-			run_command("fdt set /dsi@fde20000 status disable", 0);
-			run_command("fdt set /dsi@fde20000/panel@0 status disable", 0);
-			run_command("fdt set /dsi@fde20000/ports/port@0/endpoint@0 status disable", 0);
-			run_command("fdt set /display-subsystem/route/route-dsi0 status disable", 0);
-			printf("hlm dsi0 disable\n");
+	printf("hlm first_flag=%d namtso_mipi_id=%d\n", first_flag, namtso_mipi_id);
+	if(namtso_mipi_id == 4){
+		run_command("fdt addr 0x08300000", 0);
+		run_command("fdt set /dsi@fde20000 status disable", 0);
+		run_command("fdt set /dsi@fde20000/panel@0 status disable", 0);
+		run_command("fdt set /dsi@fde20000/ports/port@0/endpoint@0 status disable", 0);
+		run_command("fdt set /display-subsystem/route/route-dsi0 status disable", 0);
+		printf("hlm dsi0 disable\n");
+	}
+	else{
+		run_command("fdt addr 0x08300000", 0);
+		run_command("fdt set /edp@fdec0000 status disable", 0);
+		run_command("fdt set /edp@fdec0000/ports/port@0/endpoint@2 status disable", 0);
+		run_command("fdt set /display-subsystem/route/route-edp0 status disable", 0);
+		run_command("fdt set /phy@fed60000 status disable", 0);
+		//run_command("fdt set /backlight-edp0 status disable", 0);
+		//run_command("fdt set /pwm@febd0020 status disable", 0);
+		printf("hlm edp0 disable\n");
+	}
+	//namtso_mipi_id = 4;
+	if(namtso_mipi_id !=4){
+		if(first_flag){
+			tp_id = kbi_i2c_read(6,0xA8,TP05_CHIP_ADDR);
 		}
-		else{
-			run_command("fdt addr 0x08300000", 0);
-			run_command("fdt set /edp@fdec0000 status disable", 0);
-			run_command("fdt set /edp@fdec0000/ports/port@0/endpoint@2 status disable", 0);
-			run_command("fdt set /display-subsystem/route/route-edp0 status disable", 0);
-			run_command("fdt set /phy@fed60000 status disable", 0);
-			//run_command("fdt set /backlight-edp0 status disable", 0);
-			//run_command("fdt set /pwm@febd0020 status disable", 0);
-			printf("hlm edp0 disable\n");
-		}
-		//namtso_mipi_id = 4;
-		if(namtso_mipi_id !=4){
-			namtso_mipi_id = kbi_i2c_read(0xA8,TP05_CHIP_ADDR);
-			printf("TP05 id=0x%x\n",namtso_mipi_id);
-			if(namtso_mipi_id == 0x51){//old TS050
+		else
+			tp_id = kbi_i2c_read(0,0xA8,TP05_CHIP_ADDR);
+
+		printf("TP05 id=0x%x\n",tp_id);
+		if(tp_id == 0x51){//old TS050
+			if(!first_flag)
 				namtso_mipi_id = 1;
-			}else if(namtso_mipi_id == 0x79){//new TS050
+			else
+				namtso_mipi_id2 = 1;
+			printf("old TS050 to parse panel init sequence\n");
+			data = dev_read_prop(dev, "panel-init-sequence", &len);
+		}else if(tp_id == 0x79){//new TS050
+			if(!first_flag)
 				namtso_mipi_id = 3;
-			}else{
-				namtso_mipi_id = kbi_i2c_read(0x9e,TP10_CHIP_ADDR);
-				printf("TP10 id=0x%x\n",namtso_mipi_id);
-				if(namtso_mipi_id == 0x00){//TS101
-					namtso_mipi_id = 2;
-				}else {
-					namtso_mipi_id = 0;
-				}
+			else
+				namtso_mipi_id2 = 3;
+			printf("new TS050 to parse panel init sequence2\n");
+			data = dev_read_prop(dev, "panel-init-sequence2", &len);
+		}else{
+			if(first_flag)
+				tp_id = kbi_i2c_read(6,0x9e,TP10_CHIP_ADDR);
+			else{
+				tp_id = kbi_i2c_read(0,0x9e,TP10_CHIP_ADDR);
 			}
-			printf("hlm namtso_mipi_id=%d\n",namtso_mipi_id);
+
+			printf("TP10 id=0x%x\n",tp_id);
+			if(tp_id == 0x00){//TS101
+				if(!first_flag)
+					namtso_mipi_id = 2;
+				else
+					namtso_mipi_id2 = 2;
+			}else {
+				if(!first_flag)
+					namtso_mipi_id = 0;
+				else
+					namtso_mipi_id2 = 0;
+			}
+			printf("old TS050 to parse panel init sequence\n");
+			data = dev_read_prop(dev, "panel-init-sequence", &len);
 		}
-		first_flag = 0;
+		printf("hlm namtso_mipi_id=%d namtso_mipi_id2=%d\n",namtso_mipi_id, namtso_mipi_id2);
 	}
-	if(3 == namtso_mipi_id){//new TS050
-		printf("new TS050 to parse panel init sequence2\n");
-		data = dev_read_prop(dev, "panel-init-sequence2", &len);
-	}
-	else{//old TS050
-		printf("old TS050 to parse panel init sequence\n");
+	else{
 		data = dev_read_prop(dev, "panel-init-sequence", &len);
 	}
+	first_flag = !first_flag;
+
 	if (data) {
 		plat->on_cmds = calloc(1, sizeof(*plat->on_cmds));
 		if (!plat->on_cmds)
