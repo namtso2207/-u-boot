@@ -115,6 +115,7 @@ int rk_board_init(void)
 	run_command("gpio set 137", 0);		//GPIO4_B1
 	run_command("gpio set 128", 0);		//GPIO4_A0
 	run_command("gpio clear 146", 0);	//GPIO4_C2
+	run_command("gpio set 111", 0);		//GPIO3_B7  edp panel power
 
 	pci_init();
 
