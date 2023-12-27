@@ -111,9 +111,13 @@ __weak int rk_board_init(void)
 	if(kbi_i2c_read(0x88)){//LINK_DET_L GPIO0_C5 for v11
 		run_command("gpio set 77", 0);  //PCIEX1_0_SEL GPIO2_B5 WIFI
 		printf("%s switch wifi\n", __func__);
+		run_command("i2c dev 1", 0);
+		run_command("i2c mw 0x18 0x27 0x0", 0);		//switch to UART of bt
 	} else {
 		run_command("gpio clear 77", 0);  //PCIEX1_0_SEL GPIO2_B5 LINK
 		printf("%s switch link\n", __func__);
+		run_command("i2c dev 1", 0);
+		run_command("i2c mw 0x18 0x27 0x1", 0);		//switch to spi
 	}
 	run_command("gpio set 150", 0);  //PHY_PWREN GPIO4_C6
     //run_command("i2c dev 2", 0);
