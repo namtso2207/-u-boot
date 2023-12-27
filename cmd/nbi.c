@@ -45,6 +45,7 @@
 #define REG_INIT_WOL			0x85
 #define REG_SYS_OOPS			0x86
 //#define REG_BOOT_FLAG           0x87
+#define REG_INIT_PCIE_WOL		0x89
 
 
 #define BOOT_EN_WOL         0
@@ -223,9 +224,13 @@ static int pcie_eth_get_wol(bool is_print)
 void rtl8169_set_wol_enable(int enable);
 static void pcie_eth_set_wol(int enable)
 {
+	char cmd[64];
 	if ((enable&0x01) != 0) {
-		//rtl8169_set_wol_enable(enable&0x01);
+		rtl8169_set_wol_enable(enable&0x01);
 	}
+	run_command("i2c dev 1", 0);
+	sprintf(cmd, "i2c mw %x %x %d 1", CHIP_ADDR, REG_BOOT_EN_PCIE_WOL, enable);
+	run_command(cmd, 0);
 }
 
 static int get_wol(bool is_print)
@@ -330,7 +335,6 @@ static void set_wol(bool is_shutdown, int enable)
 
 	run_command("i2c dev 1", 0);
 	sprintf(cmd, "i2c mw %x %x %d 1", CHIP_ADDR, REG_BOOT_EN_WOL, enable);
-	printf("write reg: [%d]  val:[%d]\n", REG_BOOT_EN_WOL, enable);
 	run_command(cmd, 0);
 	
 }
@@ -630,6 +634,10 @@ static int do_nbi_init(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[
 	enable = get_wol(true);
 	if ((enable&0x01) != 0)
 		set_wol(false, enable);
+
+	enable = pcie_eth_get_wol(true);
+	if ((enable&0x01) != 0)
+		pcie_eth_set_wol(enable);
 	return 0;
 }
 
@@ -877,16 +885,13 @@ static int do_nbi_wol_init(cmd_tbl_t * cmdtp, int flag, int argc, char * const a
 	char cmd[64];
 	run_command("i2c dev 1", 0);
 
-	int val;
-	val = nbi_i2c_read(REG_INIT_WOL);
-	printf("nbi wol init: %d: [0x%x]\n", val, val);
-
 	sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, REG_INIT_WOL, 0);
-	printf("nbi wol init\n");
 	run_command(cmd, 0);
 
-	val = nbi_i2c_read(REG_INIT_WOL);
-	printf("nbi wol init: %d: [0x%x]\n", val, val);
+	memset(cmd, 0, sizeof(cmd));
+	sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, REG_INIT_PCIE_WOL, 0);
+	run_command(cmd, 0);
+
     return 0;
 }
 
