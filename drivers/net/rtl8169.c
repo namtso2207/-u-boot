@@ -351,6 +351,10 @@ struct rtl8169_private {
 
 static struct rtl8169_private *tpc;
 
+#define INIT_STATUS_NG		(0)
+#define INIT_STATUS_OK		(1)
+static int g_rtl8169_init_status = INIT_STATUS_NG;
+
 static const unsigned int rtl8169_rx_config =
     (RX_FIFO_THRESH << RxCfgFIFOShift) | (RX_DMA_BURST << RxCfgDMAShift);
 
@@ -1182,6 +1186,10 @@ void rtl8169_set_wol_enable(int enable)
 	unsigned int mac_version = 52;
 	unsigned int wolopts = 0;
 
+	if (!g_rtl8169_init_status) {
+		return;
+	}
+
 	if (enable) {
 		wolopts = 32;
 	}
@@ -1269,6 +1277,8 @@ static int rtl8169_eth_probe(struct udevice *dev)
 	debug("%s: FuncEvent/Misc (0xF0) = 0x%08X\n", __func__, val);
 	val &= ~RxDv_Gated_En;
 	RTL_W32(FuncEvent, val);
+
+	g_rtl8169_init_status = INIT_STATUS_OK;
 
 	return 0;
 }
