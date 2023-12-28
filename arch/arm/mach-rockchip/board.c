@@ -106,6 +106,25 @@ __weak int rk_board_init(void)
 		else
 			namtso_mipi_id = 0;
 		printf("%s hlm namtso_mipi_id=%d namtso_mipi_id=%d\n", __func__,namtso_mipi_id,namtso_mipi_id2);
+		//namtso_mipi_id = 4;
+		if(namtso_mipi_id == 4){
+			run_command("fdt addr 0x08300000", 0);
+			run_command("fdt set /dsi@fde20000 status disable", 0);
+			run_command("fdt set /dsi@fde20000/panel@0 status disable", 0);
+			run_command("fdt set /dsi@fde20000/ports/port@0/endpoint@0 status disable", 0);
+			run_command("fdt set /display-subsystem/route/route-dsi0 status disable", 0);
+			printf("hlm dsi0 disable\n");
+		}
+		else{
+			run_command("fdt addr 0x08300000", 0);
+			run_command("fdt set /edp@fdec0000 status disable", 0);
+			run_command("fdt set /edp@fdec0000/ports/port@0/endpoint@2 status disable", 0);
+			run_command("fdt set /display-subsystem/route/route-edp0 status disable", 0);
+			run_command("fdt set /phy@fed60000 status disable", 0);
+			//run_command("fdt set /backlight-edp0 status disable", 0);
+			//run_command("fdt set /pwm@febd0020 status disable", 0);
+			printf("hlm edp0 disable\n");
+		}
 	}
 #endif
 	if(kbi_i2c_read(0x88)){//LINK_DET_L GPIO0_C5 for v11

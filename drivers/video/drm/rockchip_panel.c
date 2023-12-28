@@ -557,24 +557,7 @@ static int rockchip_panel_ofdata_to_platdata(struct udevice *dev)
 	plat->bpc = dev_read_u32_default(dev, "bpc", 8);
 
 	printf("hlm first_flag=%d namtso_mipi_id=%d\n", first_flag, namtso_mipi_id);
-	if(namtso_mipi_id == 4){
-		run_command("fdt addr 0x08300000", 0);
-		run_command("fdt set /dsi@fde20000 status disable", 0);
-		run_command("fdt set /dsi@fde20000/panel@0 status disable", 0);
-		run_command("fdt set /dsi@fde20000/ports/port@0/endpoint@0 status disable", 0);
-		run_command("fdt set /display-subsystem/route/route-dsi0 status disable", 0);
-		printf("hlm dsi0 disable\n");
-	}
-	else{
-		run_command("fdt addr 0x08300000", 0);
-		run_command("fdt set /edp@fdec0000 status disable", 0);
-		run_command("fdt set /edp@fdec0000/ports/port@0/endpoint@2 status disable", 0);
-		run_command("fdt set /display-subsystem/route/route-edp0 status disable", 0);
-		run_command("fdt set /phy@fed60000 status disable", 0);
-		//run_command("fdt set /backlight-edp0 status disable", 0);
-		//run_command("fdt set /pwm@febd0020 status disable", 0);
-		printf("hlm edp0 disable\n");
-	}
+
 	//namtso_mipi_id = 4;
 	if(namtso_mipi_id !=4){
 		if(first_flag){
