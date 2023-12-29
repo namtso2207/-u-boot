@@ -86,6 +86,12 @@ __weak int set_armclk_rate(void)
 	return 0;
 }
 
+int rk_board_init_ethernet(void)
+{
+	run_command("gpio set 150", 0);		//GPIO4_C6
+	return 0;
+}
+
 extern int kbi_i2c_read(uint reg);
 int namtso_mipi_id = 0;
 int namtso_mipi_id2 = 0;
@@ -572,6 +578,7 @@ static void board_debug_init(void)
 
 int board_init(void)
 {
+	rk_board_init_ethernet();
 	board_debug_init();
 #ifdef DEBUG
 	soc_clk_dump();
