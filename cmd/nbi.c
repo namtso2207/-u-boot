@@ -144,7 +144,7 @@ static int i2c_get_cur_bus_chip(uint chip_addr, struct udevice **devp)
 }
 #endif
 
-static int nbi_i2c_read(uint reg)
+int nbi_i2c_read(uint reg)
 {
 	int ret;
 	char val[64];

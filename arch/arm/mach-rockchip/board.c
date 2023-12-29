@@ -92,7 +92,7 @@ int rk_board_init_ethernet(void)
 	return 0;
 }
 
-extern int kbi_i2c_read(uint reg);
+extern int nbi_i2c_read(uint reg);
 int namtso_mipi_id = 0;
 int namtso_mipi_id2 = 0;
 __weak int rk_board_init(void)
@@ -133,7 +133,7 @@ __weak int rk_board_init(void)
 		}
 	}
 #endif
-	if(kbi_i2c_read(0x88)){//LINK_DET_L GPIO0_C5 for v11
+	if(nbi_i2c_read(0x88)){//LINK_DET_L GPIO0_C5 for v11
 		run_command("gpio set 77", 0);  //PCIEX1_0_SEL GPIO2_B5 WIFI
 		printf("%s switch wifi\n", __func__);
 		run_command("i2c dev 1", 0);
