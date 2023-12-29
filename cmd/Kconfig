@@ -1740,6 +1740,16 @@ config CMD_KHADAS_KBI
 	help
       support config for namtso kbi
 
+menu "Namtso commands"
+
+config CMD_NAMTSO_NBI
+	bool "support namtso nbi"
+	default n
+	help
+      support config for namtso nbi
+
+endmenu
+
 endmenu
 
 endmenu

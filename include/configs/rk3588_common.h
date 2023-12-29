@@ -79,6 +79,16 @@
 	"partitions=" PARTS_RKIMG \
 	ROCKCHIP_DEVICE_SETTINGS \
 	RKIMG_DET_BOOTDEV \
+    "wol_init="\
+    "nbi init;"\
+    "nbi powerstate;"\
+    "nbi trigger wol r;"\
+    "setenv bootargs ${bootargs} wol_enable=${wol_enable};"\
+    "if test ${power_state} = 1; then "\
+            "nbi trigger wol w 1;"\
+            "nbi poweroff;"\
+    "fi;"\
+    "\0"\
 	"check_panel_mode=" \
 	"if gpio input 37; then "\
 		"echo check no Edp panel-GPIO1_A5;"\
@@ -93,8 +103,15 @@
 		"echo Reboot test mode detected;"\
 		"setenv bootargs ${bootargs} reboot_test;" \
 	"fi;"\
-	"kbi init;"\
-	"kbi usid;"\
+    "wol_init="\
+    "nbi init;"\
+    "nbi powerstate;"\
+    "nbi trigger wol r;"\
+    "setenv bootargs ${bootargs} wol_enable=${wol_enable};"\
+    "if test ${power_state} = 1; then "\
+            "nbi trigger wol w 1;"\
+            "nbi poweroff;"\
+    "fi;"\
 	"\0"\
 	BOOTENV
 #endif
@@ -104,7 +121,8 @@
 #define CONFIG_SYS_USB_OHCI_MAX_ROOT_PORTS	1
 
 #define CONFIG_PREBOOT \
-	 "run check_reboot_mode;"
+	 "run check_reboot_mode;" \
+	 "run wol_init;"
 #define CONFIG_CHECKEDP \
 	 "run check_panel_mode;"
 #define CONFIG_LIB_HW_RAND

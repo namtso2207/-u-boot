@@ -715,6 +715,8 @@ static int initr_net(void)
 	debug("Reset Ethernet PHY\n");
 	reset_phy();
 #endif
+	run_command("nbi wol_init", 0);
+	run_command("dhcp", 0);
 	return 0;
 }
 #endif
