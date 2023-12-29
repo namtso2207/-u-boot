@@ -141,6 +141,7 @@ __weak int rk_board_init(void)
 	run_command("gpio set 150", 0);  //PHY_PWREN GPIO4_C6
     //run_command("i2c dev 2", 0);
     //run_command("i2c mw 0x6b 0x8e 0x01", 0);
+	pci_init();
 	return 0;
 }
 

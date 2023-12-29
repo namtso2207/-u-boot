@@ -29,6 +29,7 @@
 #define REG_BOOT_EN_DCIN        0x23
 #define REG_BOOT_EN_LPWR		0x24
 #define REG_BOOT_EN_UPWR		0x25
+#define REG_BOOT_EN_PCIE_WOL	0x26
 
 #define REG_LED_ON_SYS			0x28
 #define REG_LED_OFF_SYS			0x29
@@ -53,6 +54,7 @@
 #define BOOT_EN_UPWR		4
 #define BOOT_EN_MCU_SLEEP	5
 #define BOOT_EN_WDT			6
+#define BOOT_EN_PCIE_WOL	7
 
 
 #define LED_OFF_MODE        0
@@ -205,6 +207,25 @@ static void  nbi_i2c_read_block(uint start_reg, int count, char val[])
 		nbytes--;
 
 	} while (nbytes > 0);
+}
+
+static int pcie_eth_get_wol(bool is_print)
+ {
+ 	int enable;
+	enable = nbi_i2c_read(REG_BOOT_EN_PCIE_WOL);
+ 	if (is_print) {
+		printf("pcie_wol_enable wol: %s\n", enable&0x01 ? "enable":"disable");
+ 	}
+	env_set("pcie_wol_enable", enable&0x01 ?"1" : "0");
+ 	return enable;
+ }
+
+void rtl8169_set_wol_enable(int enable);
+static void pcie_eth_set_wol(int enable)
+{
+	if ((enable&0x01) != 0) {
+		//rtl8169_set_wol_enable(enable&0x01);
+	}
 }
 
 static int get_wol(bool is_print)
@@ -444,6 +465,8 @@ static void get_boot_enable(int type)
 {
 	if (type == BOOT_EN_WOL)
 		get_wol(true);
+	else if (type == BOOT_EN_PCIE_WOL)
+		pcie_eth_get_wol(true);
 	else if (type == BOOT_EN_RTC)
 		get_rtc();
 	else if (type == BOOT_EN_DCIN)
@@ -464,6 +487,10 @@ static void set_boot_enable(int type, int enable)
 	if (type == BOOT_EN_WOL) {
 		state = get_wol(false);
 		set_wol(false, enable|(state&0x02));
+	}
+	else if (type == BOOT_EN_PCIE_WOL) {
+		state = pcie_eth_get_wol(false);
+		pcie_eth_set_wol(enable|(state&0x02));
 	}
 	else if (type == BOOT_EN_RTC)
 		set_rtc(enable);
@@ -488,6 +515,8 @@ static int do_nbi_trigger(cmd_tbl_t * cmdtp, int flag, int argc, char * const ar
 
 		if (strcmp(argv[1], "wol") == 0)
 			get_boot_enable(BOOT_EN_WOL);
+		else if (strcmp(argv[1], "pcie_wol") == 0)
+			get_boot_enable(BOOT_EN_PCIE_WOL);
 		else if (strcmp(argv[1], "rtc") == 0)
 			get_boot_enable(BOOT_EN_RTC);
 		else if (strcmp(argv[1], "dcin") == 0)
@@ -515,7 +544,12 @@ static int do_nbi_trigger(cmd_tbl_t * cmdtp, int flag, int argc, char * const ar
 			else
 				set_boot_enable(BOOT_EN_WOL, 0);
 
-	    } else if (strcmp(argv[1], "rtc") == 0) {
+	    } else if (strcmp(argv[1], "pcie_wol") == 0) {
+			if (strcmp(argv[3], "1") == 0)
+				set_boot_enable(BOOT_EN_PCIE_WOL, 1);
+			else
+				set_boot_enable(BOOT_EN_PCIE_WOL, 0);
+		} else if (strcmp(argv[1], "rtc") == 0) {
 
 			if (strcmp(argv[3], "1") == 0)
 				set_boot_enable(BOOT_EN_RTC, 1);
