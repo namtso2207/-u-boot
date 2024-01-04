@@ -117,7 +117,14 @@ int rk_board_init(void)
 	run_command("gpio clear 146", 0);	//GPIO4_C2
 	run_command("gpio set 111", 0);		//GPIO3_B7  edp panel power
 
-	pci_init();
+	run_command("nbi get_pcie_wol", 0);
+	char * pcie_wol_en = env_get("pcie_wol_status");
+	printf("get pcie eth wol status:%s\n", pcie_wol_en);
+	if (NULL != pcie_wol_en) {
+		if (!strncmp("1", pcie_wol_en, 1)) {
+			pci_init();
+		}
+	}
 
 	ret = uclass_get_device_by_seq(UCLASS_I2C, TP_I2C_BUS_NUM, &bus);
 	if (ret) {
