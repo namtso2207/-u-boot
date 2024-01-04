@@ -111,7 +111,14 @@ __weak int rk_board_init(void)
 	run_command("gpio set 20", 0);  //PHY_PWREN GPIO0_C5
     //run_command("i2c dev 2", 0);
     //run_command("i2c mw 0x6b 0x8e 0x01", 0);
-	pci_init();
+	run_command("nbi get_pcie_wol", 0);
+	char * pcie_wol_en = env_get("pcie_wol_status");
+	printf("get pcie eth wol status:%s\n", pcie_wol_en);
+	if (NULL != pcie_wol_en) {
+		if (!strncmp("1", pcie_wol_en, 1)) {
+			pci_init();
+		}
+	}
 	return 0;
 }
 
