@@ -802,12 +802,6 @@ __weak int board_initr_caches_fixup(void)
 	return 0;
 }
 
-static int initr_latest(void)
-{
-	run_command("nbi switch_bt", 0);
-	return 0;
-}
-
 static int run_main_loop(void)
 {
 #ifdef CONFIG_SANDBOX
@@ -1057,7 +1051,6 @@ static init_fnc_t init_sequence_r[] = {
 #ifdef CONFIG_PS2KBD
 	initr_kbd,
 #endif
-	initr_latest,
 	run_main_loop,
 };
 
