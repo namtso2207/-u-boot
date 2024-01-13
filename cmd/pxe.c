@@ -1047,6 +1047,9 @@ static int label_boot(cmd_tbl_t *cmdtp, struct pxe_label *label)
 		    else
 			fdt_overlay_helper(cmdtp, label, fdtfile);
 #endif
+			// Remove bootargs from device tree, ubuntu don't need it
+			printf("Removing bootargs from device tree.\n");
+			run_command("fdt addr ${fdt_addr_r}; fdt resize 65536; fdt set /chosen bootargs;", 0);
 		} else {
 			bootm_argv[3] = NULL;
 		}
