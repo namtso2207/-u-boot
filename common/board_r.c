@@ -707,6 +707,7 @@ static int initr_bbmii(void)
 #endif
 
 #ifdef CONFIG_CMD_NET
+int eth_init_wol(void);
 static int initr_net(void)
 {
 	puts("Net:   ");
@@ -715,10 +716,8 @@ static int initr_net(void)
 	debug("Reset Ethernet PHY\n");
 	reset_phy();
 #endif
+	eth_init_wol();
 	run_command("nbi wol_init", 0);
-	eth_halt();
-	eth_set_current();
-	eth_init();
 	return 0;
 }
 #endif

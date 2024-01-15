@@ -891,6 +891,9 @@ static int rtl8169_write_hwaddr(struct udevice *dev)
 	struct eth_pdata *plat = dev_get_platdata(dev);
 	unsigned int i;
 
+	printf("\nRTL8152B MAC: %x:%x:%x:%x:%x:%x", plat->enetaddr[0], plat->enetaddr[1], plat->enetaddr[2],
+		plat->enetaddr[3], plat->enetaddr[4], plat->enetaddr[5]);
+
 	RTL_W8(Cfg9346, Cfg9346_Unlock);
 
 	for (i = 0; i < MAC_ADDR_LEN; i++)
@@ -934,7 +937,7 @@ static int rtl_init(unsigned long dev_ioaddr, const char *name,
 
 #ifdef DEBUG_RTL8169
 	printf("chipset = %d\n", tpc->chipset);
-	printf("MAC Address");
+	printf("RTL8169 MAC Address");
 	for (i = 0; i < MAC_ADDR_LEN; i++)
 		printf(":%02x", enetaddr[i]);
 	putc('\n');
@@ -1238,11 +1241,9 @@ static int rtl8169_eth_probe(struct udevice *dev)
 	struct pci_child_platdata *pplat = dev_get_parent_platdata(dev);
 	struct rtl8169_private *priv = dev_get_priv(dev);
 	struct eth_pdata *plat = dev_get_platdata(dev);
-	u32 iobase = 0;
 	int region;
 	int ret;
 
-	printf("rtl8169: REALTEK RTL8169 @0x%x\n", iobase);
 	switch (pplat->device) {
 	case 0x8125:
 	case 0x8161:
@@ -1256,7 +1257,6 @@ static int rtl8169_eth_probe(struct udevice *dev)
 
 	priv->iobase = (ulong)dm_pci_map_bar(dev,
 					     PCI_BASE_ADDRESS_0 + region * 4, 0);
-	printf("priv->iobase: 0x%lx\n", priv->iobase);
 
 	debug("rtl8169: REALTEK RTL8169 @0x%lx\n", priv->iobase);
 	ret = rtl_init(priv->iobase, dev->name, plat->enetaddr);

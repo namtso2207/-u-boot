@@ -271,6 +271,8 @@ struct eqos_desc {
 #define EQOS_DESC3_LD		BIT(28)
 #define EQOS_DESC3_BUF1V	BIT(24)
 
+static unsigned char gmac_mac_addr[6] = {0};
+
 /*
  * TX and RX descriptors are 16 bytes. This causes problems with the cache
  * maintenance on CPUs where the cache-line size exceeds the size of these
@@ -1080,11 +1082,21 @@ static int eqos_adjust_link(struct udevice *dev)
 	return 0;
 }
 
+void eqos_get_hwaddr(unsigned char * mac)
+{
+	assert(mac);
+	memcpy(mac, gmac_mac_addr, sizeof(gmac_mac_addr)/sizeof(gmac_mac_addr[0]));
+}
+
 int eqos_write_hwaddr(struct udevice *dev)
 {
 	struct eth_pdata *plat = dev_get_platdata(dev);
 	struct eqos_priv *eqos = dev_get_priv(dev);
 	uint32_t val;
+
+	printf("\nGmac MAC: %x:%x:%x:%x:%x:%x", plat->enetaddr[0], plat->enetaddr[1], plat->enetaddr[2],
+		plat->enetaddr[3], plat->enetaddr[4], plat->enetaddr[5]);
+	memcpy(gmac_mac_addr, plat->enetaddr, 6);
 
 	/*
 	 * This function may be called before start() or after stop(). At that
@@ -1260,6 +1272,105 @@ err:
 	pr_err("FAILED: %d", ret);
 	return ret;
 }
+
+int eqos_init_wol(struct udevice *dev)
+{
+	struct eqos_priv *eqos = dev_get_priv(dev);
+	int ret = 0, limit = 10;
+	ulong rate;
+	u32 val;
+
+	debug("%s(dev=%p):\n", __func__, dev);
+
+	if (eqos->config->ops->eqos_start_clks) {
+		ret = eqos->config->ops->eqos_start_clks(dev);
+		if (ret < 0) {
+			pr_err("eqos_start_clks() failed: %d", ret);
+			goto err;
+		}
+	}
+
+	if (!eqos->mii_reseted) {
+		ret = eqos->config->ops->eqos_start_resets(dev);
+		if (ret < 0) {
+			pr_err("eqos_start_resets() failed: %d", ret);
+			goto err_stop_clks;
+		}
+
+		eqos->mii_reseted = true;
+		udelay(10);
+	}
+
+	eqos->reg_access_ok = true;
+
+	/* DMA SW reset */
+	val = readl(&eqos->dma_regs->mode);
+	val |= EQOS_DMA_MODE_SWR;
+	writel(val, &eqos->dma_regs->mode);
+	while (limit--) {
+		if (!(readl(&eqos->dma_regs->mode) & EQOS_DMA_MODE_SWR))
+			break;
+		mdelay(10);
+	}
+
+	ret = eqos->config->ops->eqos_calibrate_pads(dev);
+	if (ret < 0) {
+		pr_err("eqos_calibrate_pads() failed: %d", ret);
+		goto err_stop_resets;
+	}
+	rate = eqos->config->ops->eqos_get_tick_clk_rate(dev);
+
+	val = (rate / 1000000) - 1;
+	writel(val, &eqos->mac_regs->us_tic_counter);
+
+	/*
+	 * if PHY was already connected and configured,
+	 * don't need to reconnect/reconfigure again
+	 */
+	if (!eqos->phy) {
+		int addr = -1;
+#ifdef CONFIG_DM_ETH_PHY
+		addr = eth_phy_get_addr(dev);
+#endif
+#ifdef DWC_NET_PHYADDR
+		addr = DWC_NET_PHYADDR;
+#endif
+		eqos->phy = phy_connect(eqos->mii, addr, dev,
+		 eqos->config->ops->eqos_get_interface(dev));
+		if (!eqos->phy) {
+			pr_err("phy_connect() failed");
+			ret = -ENODEV;
+			goto err_stop_resets;
+		}
+
+		if (eqos->max_speed) {
+			ret = phy_set_supported(eqos->phy, eqos->max_speed);
+			if (ret) {
+				pr_err("phy_set_supported() failed: %d", ret);
+				goto err_shutdown_phy;
+			}
+		}
+
+		ret = phy_config(eqos->phy);
+		if (ret < 0) {
+			pr_err("phy_config() failed: %d", ret);
+			goto err_shutdown_phy;
+		}
+	}
+
+	debug("%s: OK\n", __func__);
+	return 0;
+
+err_shutdown_phy:
+	phy_shutdown(eqos->phy);
+err_stop_resets:
+	eqos->mii_reseted = false;
+err_stop_clks:
+err:
+	pr_err("FAILED: %d", ret);
+	return ret;
+}
+
 
 void eqos_enable(struct udevice *dev)
 {
