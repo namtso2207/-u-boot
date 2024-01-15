@@ -303,6 +303,70 @@ int eth_init(void)
 	return ret;
 }
 
+int eqos_init_wol(struct udevice *dev);
+int eth_init_wol(void)
+{
+	char *ethact = env_get("ethact");
+	char *ethrotate = env_get("ethrotate");
+	struct udevice *current = NULL;
+	struct udevice *old_current;
+	int ret = -ENODEV;
+
+	/*
+	 * When 'ethrotate' variable is set to 'no' and 'ethact' variable
+	 * is already set to an ethernet device, we should stick to 'ethact'.
+	 */
+	if ((ethrotate != NULL) && (strcmp(ethrotate, "no") == 0)) {
+		if (ethact) {
+			current = eth_get_dev_by_name(ethact);
+			if (!current)
+				return -EINVAL;
+		}
+	}
+
+	if (!current) {
+		current = eth_get_dev();
+		if (!current) {
+			printf("No ethernet found.\n");
+			return -ENODEV;
+		}
+	}
+
+	old_current = current;
+	do {
+		if (current) {
+			debug("Trying %s\n", current->name);
+
+			if (device_active(current)) {
+				ret = eqos_init_wol(current);
+				if (ret >= 0) {
+					struct eth_device_priv *priv =
+						current->uclass_priv;
+
+					priv->state = ETH_STATE_ACTIVE;
+					return 0;
+				}
+			} else {
+				ret = eth_errno;
+			}
+
+			debug("FAIL\n");
+		} else {
+			debug("PROBE FAIL\n");
+		}
+
+		/*
+		 * If ethrotate is enabled, this will change "current",
+		 * otherwise we will drop out of this while loop immediately
+		 */
+		eth_try_another(0);
+		/* This will ensure the new "current" attempted to probe */
+		current = eth_get_dev();
+	} while (old_current != current);
+
+	return ret;
+}
+
 void eth_halt(void)
 {
 	struct udevice *current;
@@ -417,7 +481,7 @@ int eth_initialize(void)
 		bootstage_mark(BOOTSTAGE_ID_NET_ETH_INIT);
 		do {
 			if (num_devices)
-				printf(", ");
+				printf("\n");
 
 			printf("eth%d: %s", dev->seq, dev->name);
 

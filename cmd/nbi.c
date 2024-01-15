@@ -13,6 +13,8 @@
 #include <asm/byteorder.h>
 #include <linux/compiler.h>
 #include <asm/u-boot.h>
+#include <miiphy.h>
+#include <phy.h>
 #include "asm/arch-rockchip/vendor.h"
 
 #define CHIP_ADDR              0x18
@@ -234,13 +236,13 @@ static int get_wol(bool is_print)
 	return enable;
 }
 
+void eqos_get_hwaddr(unsigned char * mac);
 static void set_wol(bool is_shutdown, int enable)
 {
 	char cmd[64];
-	int mode;
 
 	if ((enable&0x01) != 0) {
-		char mac_addr[MAC_LENGHT] = {0};
+		unsigned char mac_addr[MAC_LENGHT] = {0};
 		if (is_shutdown)
 			run_command("mdio write ethernet@fe1c0000 0 0", 0);
 		else
@@ -250,40 +252,7 @@ static void set_wol(bool is_shutdown, int enable)
 		run_command("mdio write ethernet@fe1c0000 0x16 0x20", 0);
 		run_command("mdio write ethernet@fe1c0000 0x1f 0", 0);
 
-		mode = nbi_i2c_read(REG_MAC_SWITCH);
-		if (mode == 1) {
-			nbi_i2c_read_block(REG_MAC, MAC_LENGHT, mac_addr);
-		} else {
-//			run_command("efuse mac", 0);
-//			char *s = getenv("eth_mac");
-//			if ((s != NULL) && (strcmp(s, "00:00:00:00:00:00") != 0)) {
-//				printf("getmac = %s\n", s);
-//				int i = 0;
-//				for (i = 0; i < 6 && s[0] != '\0' && s[1] != '\0'; i++) {
-//				mac_addr[i] = chartonum(s[0]) << 4 | chartonum(s[1]);
-//				s +=3;
-//				}
-//		} else {
-//			nbi_i2c_read_block(REG_MAC, MAC_LENGHT, mac_addr);
-//		}
-
-			int ret;
-			ret = vendor_storage_init();
-			if (ret) {
-				printf("nbi: vendor_storage_init failed %d\n", ret);
-				return;
-			}
-
-			ret = vendor_storage_read(VENDOR_LAN_MAC_ID, mac_addr, MAC_LENGHT);
-			if (MAC_LENGHT == ret && !is_zero_ethaddr((const u8 *)mac_addr)) {
-				debug("read mac from vendor successfully!\n");
-			} else {
-				nbi_i2c_read_block(REG_MAC, MAC_LENGHT, mac_addr);
-			}
-		}
-
-		printf("mac: %x:%x:%x:%x:%x:%x\n", mac_addr[0], mac_addr[1], mac_addr[2],
-			mac_addr[3], mac_addr[4], mac_addr[5]);
+		eqos_get_hwaddr(mac_addr);
 
 		run_command("mdio write ethernet@fe1c0000 0x1f 0xd8c", 0);
 		sprintf(cmd, "mdio write ethernet@fe1c0000 0x10 0x%x%x", mac_addr[1], mac_addr[0]);
@@ -327,7 +296,6 @@ static void set_wol(bool is_shutdown, int enable)
 	run_command("i2c dev 1", 0);
 	sprintf(cmd, "i2c mw %x %x %d 1", CHIP_ADDR, REG_BOOT_EN_WOL, enable);
 	run_command(cmd, 0);
-	
 }
 
 static void get_rtc(void)
