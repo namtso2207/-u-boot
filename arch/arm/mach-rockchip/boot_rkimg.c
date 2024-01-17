@@ -584,8 +584,8 @@ int rockchip_read_dtb_file(void *fdt)
 		env_size = DEFAULT_ENV_FILE_SIZE;
 	}
 
-	/* load env.txt */
-	snprintf(env_buf, sizeof(env_buf), "load mmc 0:6 0x%lx  /boot/env.txt", load_env_addr);
+	/* load uEnv.txt */
+	snprintf(env_buf, sizeof(env_buf), "load mmc 0:6 0x%lx  /boot/uEnv.txt", load_env_addr);
 	printf("cmd:%s\n", env_buf);
 	ret = run_command(env_buf, 0);
 	if (!ret) {
@@ -597,7 +597,7 @@ int rockchip_read_dtb_file(void *fdt)
 			printf("env import failed\n");
 		}
 	} else {
-		printf("load /boot/env.txt failed\n");
+		printf("load /boot/uEnv.txt failed\n");
 	}
 
 	for (locate = 0; locate < LOCATE_END; locate++) {
