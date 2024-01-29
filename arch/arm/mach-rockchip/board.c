@@ -97,42 +97,6 @@ int namtso_mipi_id = 0;
 int namtso_mipi_id2 = 0;
 __weak int rk_board_init(void)
 {
-#ifdef CONFIG_CHECKEDP
-	char *p;
-	char *mode;
-	p = env_get("checkedp");
-	if (p != NULL) {
-		run_command_list(p, -1, 0);
-		//run_command("gpio set 146", 0);	//HDMI/EDP_SW GPIO4_C2 1£ºhdmi
-		run_command("gpio clear 146", 0);	//HDMI/EDP_SW GPIO4_C2 0: edp
-		mode = env_get("namtso_mipi_id");
-		printf("%s hlm mode=%s\n", __func__,mode);
-		if(strcmp(mode,"4") == 0)
-			namtso_mipi_id = 4;
-		else
-			namtso_mipi_id = 0;
-		printf("%s hlm namtso_mipi_id=%d namtso_mipi_id=%d\n", __func__,namtso_mipi_id,namtso_mipi_id2);
-		//namtso_mipi_id = 4;
-		if(namtso_mipi_id == 4){
-			run_command("fdt addr 0x08300000", 0);
-			run_command("fdt set /dsi@fde20000 status disable", 0);
-			run_command("fdt set /dsi@fde20000/panel@0 status disable", 0);
-			run_command("fdt set /dsi@fde20000/ports/port@0/endpoint@0 status disable", 0);
-			run_command("fdt set /display-subsystem/route/route-dsi0 status disable", 0);
-			printf("hlm dsi0 disable\n");
-		}
-		else{
-			run_command("fdt addr 0x08300000", 0);
-			run_command("fdt set /edp@fdec0000 status disable", 0);
-			run_command("fdt set /edp@fdec0000/ports/port@0/endpoint@2 status disable", 0);
-			run_command("fdt set /display-subsystem/route/route-edp0 status disable", 0);
-			run_command("fdt set /phy@fed60000 status disable", 0);
-			//run_command("fdt set /backlight-edp0 status disable", 0);
-			//run_command("fdt set /pwm@febd0020 status disable", 0);
-			printf("hlm edp0 disable\n");
-		}
-	}
-#endif
 	if(nbi_i2c_read(0x88)){//LINK_DET_L GPIO0_C5 for v11
 		run_command("gpio set 77", 0);  //PCIEX1_0_SEL GPIO2_B5 WIFI
 		printf("%s switch wifi\n", __func__);
