@@ -568,6 +568,9 @@ static int eth_post_probe(struct udevice *dev)
 	if (!is_zero_ethaddr(env_enetaddr)) {
 		if (!is_zero_ethaddr(pdata->enetaddr) &&
 		    memcmp(pdata->enetaddr, env_enetaddr, ARP_HLEN)) {
+		    if (!strcmp("eth_rtl8169", dev->name)) {
+				return 0;
+			}
 			printf("\nWarning: %s MAC addresses don't match:\n",
 			       dev->name);
 			printf("Address in ROM is          %pM\n",
