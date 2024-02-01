@@ -872,6 +872,7 @@ static void env_helper(cmd_tbl_t *cmdtp, struct pxe_label *label)
  * of the 'bootargs' environment variable.
  */
 int board_set_lcd_enable(void);
+int board_init_wifi(void);
 static int label_boot(cmd_tbl_t *cmdtp, struct pxe_label *label)
 {
 	char *bootm_argv[] = { "bootm", NULL, NULL, NULL, NULL };
@@ -1054,6 +1055,8 @@ static int label_boot(cmd_tbl_t *cmdtp, struct pxe_label *label)
 
 			/* set lcd enable/disable */
 			board_set_lcd_enable();
+			/* wifi cfg */
+			board_init_wifi();
 		} else {
 			bootm_argv[3] = NULL;
 		}

@@ -142,6 +142,21 @@ int board_init_lcd(void)
 	return 0;
 }
 
+int board_init_wifi(void)
+{
+    char * wifi_status = env_get("wifi");
+    if (NULL != wifi_status) {
+        if (!strncmp("on", wifi_status, sizeof("on"))) {
+            run_command("gpio set 77", 0);      //GPIO2_B5  set wifi/bt
+        } else {
+            run_command("gpio clear 77", 0);    //GPIO2_B5  set link
+        }
+    } else {
+        run_command("gpio clear 77", 0);        //GPIO2_B5  set link
+    }
+	return 0;
+}
+
 int rk_board_init(void)
 {
 	int ret = 0;
@@ -235,7 +250,9 @@ int rk_board_init(void)
 			}
 		}
 	}
+
 	board_init_lcd();
+	board_init_wifi();
 
 	return 0;
 
