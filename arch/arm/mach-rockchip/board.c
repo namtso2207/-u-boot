@@ -97,7 +97,7 @@ int namtso_mipi_id = 0;
 int namtso_mipi_id2 = 0;
 __weak int rk_board_init(void)
 {
-	if(nbi_i2c_read(0x88)){//LINK_DET_L GPIO0_C5 for v11
+	if(nbi_i2c_read(0x88)){//LINK_DET_L
 		run_command("gpio set 77", 0);  //PCIEX1_0_SEL GPIO2_B5 WIFI
 		printf("%s switch wifi\n", __func__);
 		run_command("i2c dev 1", 0);
@@ -108,7 +108,7 @@ __weak int rk_board_init(void)
 		run_command("i2c dev 1", 0);
 		run_command("i2c mw 0x18 0x27 0x1", 0);		//switch to spi
 	}
-	run_command("gpio set 150", 0);  //PHY_PWREN GPIO4_C6
+	run_command("gpio set 20", 0);  //PHY_PWREN GPIO0_C5
     //run_command("i2c dev 2", 0);
     //run_command("i2c mw 0x6b 0x8e 0x01", 0);
 	pci_init();

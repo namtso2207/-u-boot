@@ -1028,8 +1028,8 @@ static int analogix_dp_probe(struct udevice *dev)
 	p = env_get("checkedp");
 	if (p != NULL) {
 		run_command_list(p, -1, 0);
-		//run_command("gpio set 146", 0);	//HDMI/EDP_SW GPIO4_C2 1：hdmi
-		run_command("gpio clear 146", 0);	//HDMI/EDP_SW GPIO4_C2 0: edp
+		//run_command("gpio set 133", 0);	//HDMI/EDP_SW GPIO4_A5 1：hdmi
+		run_command("gpio clear 133", 0);	//HDMI/EDP_SW GPIO4_A5 0: edp
 		mode = env_get("namtso_mipi_id");
 		printf("%s hlm mode=%s\n", __func__,mode);
 		if(strcmp(mode,"4") == 0)
