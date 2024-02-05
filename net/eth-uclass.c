@@ -180,9 +180,11 @@ int eth_get_dev_index(void)
 	return -1;
 }
 
+int get_gmac_eth_mac(unsigned char * mac);
 static int eth_write_hwaddr(struct udevice *dev)
 {
 	struct eth_pdata *pdata;
+	unsigned char mac_addr[ARP_HLEN] = {0};
 	int ret = 0;
 
 	if (!dev || !device_active(dev))
@@ -201,6 +203,14 @@ static int eth_write_hwaddr(struct udevice *dev)
 		 * Drivers are allowed to decide not to implement this at
 		 * run-time. E.g. Some devices may use it and some may not.
 		 */
+		if (NULL != dev->name) {
+			if (!strcmp(dev->name, "ethernet@fe1c0000")) {
+				ret = get_gmac_eth_mac(mac_addr);
+				if (!ret) {
+					memcpy(pdata->enetaddr, mac_addr, ARP_HLEN);
+				}
+			}
+		}
 		ret = eth_get_ops(dev)->write_hwaddr(dev);
 		if (ret == -ENOSYS)
 			ret = 0;

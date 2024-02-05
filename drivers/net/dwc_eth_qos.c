@@ -1093,10 +1093,14 @@ int eqos_write_hwaddr(struct udevice *dev)
 	struct eth_pdata *plat = dev_get_platdata(dev);
 	struct eqos_priv *eqos = dev_get_priv(dev);
 	uint32_t val;
+	char mac_addr[32] = {'\0'};
 
 	printf("\nGmac MAC: %x:%x:%x:%x:%x:%x", plat->enetaddr[0], plat->enetaddr[1], plat->enetaddr[2],
 		plat->enetaddr[3], plat->enetaddr[4], plat->enetaddr[5]);
 	memcpy(gmac_mac_addr, plat->enetaddr, 6);
+	snprintf(mac_addr, sizeof(mac_addr), "gmac=%x:%x:%x:%x:%x:%x", plat->enetaddr[0], plat->enetaddr[1], plat->enetaddr[2],
+		plat->enetaddr[3], plat->enetaddr[4], plat->enetaddr[5]);
+	env_update("bootargs", mac_addr);
 
 	/*
 	 * This function may be called before start() or after stop(). At that

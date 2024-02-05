@@ -236,6 +236,18 @@ static int get_wol(bool is_print)
 	return enable;
 }
 
+int get_gmac_eth_mac(unsigned char * mac)
+{
+	assert(mac);
+	unsigned char mac_addr[MAC_LENGHT] = {0};
+	nbi_i2c_read_block(REG_MAC, MAC_LENGHT, (char*)mac_addr);
+	if ((!mac_addr[0]) && (!mac_addr[1]) && (!mac_addr[2]) && (!mac_addr[3]) && (!mac_addr[4]) && (!mac_addr[5])) {
+		return -1;
+	}
+	memcpy(mac, mac_addr, MAC_LENGHT);
+	return 0;
+}
+
 void eqos_get_hwaddr(unsigned char * mac);
 static void set_wol(bool is_shutdown, int enable)
 {
@@ -252,7 +264,10 @@ static void set_wol(bool is_shutdown, int enable)
 		run_command("mdio write ethernet@fe1c0000 0x16 0x20", 0);
 		run_command("mdio write ethernet@fe1c0000 0x1f 0", 0);
 
-		eqos_get_hwaddr(mac_addr);
+		nbi_i2c_read_block(REG_MAC, MAC_LENGHT, (char*)mac_addr);
+		if ((!mac_addr[0]) && (!mac_addr[1]) && (!mac_addr[2]) && (!mac_addr[3]) && (!mac_addr[4]) && (!mac_addr[5])) {
+			eqos_get_hwaddr(mac_addr);
+		}
 
 		run_command("mdio write ethernet@fe1c0000 0x1f 0xd8c", 0);
 		sprintf(cmd, "mdio write ethernet@fe1c0000 0x10 0x%x%x", mac_addr[1], mac_addr[0]);
