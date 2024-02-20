@@ -568,7 +568,7 @@ int rockchip_read_dtb_file(void *fdt)
 {
 	int locate, ret;
 	int size;
-	char env_buf[64] = {'\0'};
+	char env_buf[128] = {'\0'};
 	char * env_addr = env_get("ramdisk_addr_r");
 	char * file_size = env_get("filesize_s");
 	unsigned long load_env_addr = 0;
@@ -585,7 +585,7 @@ int rockchip_read_dtb_file(void *fdt)
 	}
 
 	/* load uEnv.txt */
-	snprintf(env_buf, sizeof(env_buf), "load mmc 0:6 0x%lx  /boot/uEnv.txt", load_env_addr);
+	snprintf(env_buf, sizeof(env_buf), "load mmc 0:6 0x%lx  /boot/dtb/rockchip/rk3588-namtso-a10-3588.dtb.overlay.env", load_env_addr);
 	printf("cmd:%s\n", env_buf);
 	ret = run_command(env_buf, 0);
 	if (!ret) {
@@ -597,7 +597,7 @@ int rockchip_read_dtb_file(void *fdt)
 			printf("env import failed\n");
 		}
 	} else {
-		printf("load /boot/uEnv.txt failed\n");
+		printf("load /boot/dtb/rockchip/rk3588-namtso-a10-3588.dtb.overlay.env failed\n");
 	}
 
 	for (locate = 0; locate < LOCATE_END; locate++) {
@@ -616,7 +616,7 @@ int rockchip_read_dtb_file(void *fdt)
 		ALIGN(size, RK_BLK_SIZE) + CONFIG_SYS_FDT_PAD))
 		return -ENOMEM;
 
-	char * overlays = env_get("overlays");
+	char * overlays = env_get("fdt_overlays");
 	char * setoverlays = NULL;
 	char * ptr = NULL;  
 	char cmd_buf[128] = {'\0'};
@@ -636,7 +636,7 @@ int rockchip_read_dtb_file(void *fdt)
 			ptr = strtok(setoverlays, " ");
 			while(ptr != NULL){
 				memset(cmd_buf, 0, sizeof(cmd_buf));
-				snprintf(cmd_buf, sizeof(cmd_buf), "load mmc 0:6 0x%lx  /boot/overlays/%s.dtbo", load_dtbo_addr, ptr);
+				snprintf(cmd_buf, sizeof(cmd_buf), "load mmc 0:6 0x%lx  /boot/dtb/rockchip/rk3588-namtso-a10-3588.dtb.overlays/%s.dtbo", load_dtbo_addr, ptr);
 				printf("cmd:%s\n", cmd_buf);
 				ret = run_command(cmd_buf, 0);
 				if (!ret) {
