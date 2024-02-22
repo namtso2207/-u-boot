@@ -1216,12 +1216,13 @@ static int load_bmp_logo(struct logo_info *logo, const char *bmp_name)
 	struct rockchip_logo_cache *logo_cache;
 	struct bmp_header *header;
 	void *dst = NULL, *pdst;
-	int size;
+	int size, len;
 	int ret = 0;
 	int reserved = 0;
 	int dst_size;
 
 	ulong logo_addr_r;
+	int sample_way = true;
 
 	logo_addr_r = env_get_ulong("logo_addr_r", 16, 0);
 
@@ -1243,7 +1244,19 @@ static int load_bmp_logo(struct logo_info *logo, const char *bmp_name)
 
 	if (header->signature[0] != 'B' || header->signature[1] != 'M') {
 	    printf("!!!RK logo not valid bmp\n");
-	    return 0;
+		sample_way = false;
+	}
+
+	if (!sample_way) {
+		header = malloc(RK_BLK_SIZE);
+		if (!header)
+			return -ENOMEM;
+
+		len = rockchip_read_resource_file(header, bmp_name, 0, RK_BLK_SIZE);
+		if (len != RK_BLK_SIZE) {
+			ret = -EINVAL;
+			goto free_header;
+		}
 	}
 
 	logo->bpp = get_unaligned_le16(&header->bit_count);
@@ -1255,10 +1268,28 @@ static int load_bmp_logo(struct logo_info *logo, const char *bmp_name)
 	    logo->height = -logo->height;
 	size = get_unaligned_le32(&header->file_size);
 	if (!can_direct_logo(logo->bpp)) {
-		pdst = (void *)logo_addr_r;
+		if (sample_way) {
+			pdst = (void *)logo_addr_r;
+		} else {
+			if (size > MEMORY_POOL_SIZE) {
+				printf("failed to use boot buf as temp bmp buffer\n");
+				ret = -ENOMEM;
+				goto free_header;
+			}
+			pdst = get_display_buffer(size);
+		}
 	} else {
 		pdst = get_display_buffer(size);
 		dst = pdst;
+	}
+
+	if (!sample_way) {
+		len = rockchip_read_resource_file(pdst, bmp_name, 0, size);
+		if (len != size) {
+			printf("failed to load bmp %s\n", bmp_name);
+			ret = -ENOENT;
+			goto free_header;
+		}
 	}
 
 	if (!can_direct_logo(logo->bpp)) {
@@ -1294,7 +1325,9 @@ static int load_bmp_logo(struct logo_info *logo, const char *bmp_name)
 	flush_dcache_range((ulong)dst, ALIGN((ulong)dst + dst_size, CONFIG_SYS_CACHELINE_SIZE));
 
 free_header:
-
+	if (!sample_way) {
+		free(header);
+	}
 	return ret;
 #else
 	return -EINVAL;
