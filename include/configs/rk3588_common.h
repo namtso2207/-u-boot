@@ -89,6 +89,7 @@
 	"fi;"\
 	"\0"\
 	"wol_init="\
+        "nbi usid;"\
 	"nbi init;"\
 	"nbi powerstate;"\
 	"nbi trigger wol r;"\
