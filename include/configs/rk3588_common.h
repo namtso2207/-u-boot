@@ -94,6 +94,7 @@
 	"nbi powerstate;"\
 	"nbi trigger wol r;"\
 	"nbi trigger pcie_wol r;"\
+        "sf probe 5:1;"\
 	"setenv bootargs ${bootargs} wol_enable=${wol_enable};"\
 	"if test ${power_state} = 1; then "\
 		"if test ${wol_enable} = 1; then "\

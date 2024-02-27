@@ -2472,6 +2472,7 @@ static int spi_nor_init(struct spi_nor *nor)
 	return 0;
 }
 
+int spi_state = 0;
 int spi_nor_scan(struct spi_nor *nor)
 {
 	struct spi_nor_flash_parameter params;
@@ -2631,7 +2632,10 @@ int spi_nor_scan(struct spi_nor *nor)
 	nor->size = mtd->size;
 	nor->erase_size = mtd->erasesize;
 	nor->sector_size = mtd->erasesize;
-
+	if(!strncmp("w25q256fw", nor->name, 9)){
+		//printf("hlm spi_state = 1 ");
+		spi_state = 1;
+	}
 #ifndef CONFIG_SPL_BUILD
 	printf("SF: Detected %s with page size ", nor->name);
 	print_size(nor->page_size, ", erase size ");

@@ -95,16 +95,19 @@ int rk_board_init_ethernet(void)
 extern int nbi_i2c_read(uint reg);
 int namtso_mipi_id = 0;
 int namtso_mipi_id2 = 0;
+int is_link_board_exit = 0;
 __weak int rk_board_init(void)
 {
-	if(nbi_i2c_read(0x88)){//LINK_DET_L
+	if(nbi_i2c_read(0x88)){//LINK_DET_L no input
 		run_command("gpio set 77", 0);  //PCIEX1_0_SEL GPIO2_B5 WIFI
 		printf("%s switch wifi\n", __func__);
+		is_link_board_exit = 0;
 		run_command("i2c dev 1", 0);
 		run_command("i2c mw 0x18 0x27 0x0", 0);		//switch to UART of bt
-	} else {
+	} else {//input
 		run_command("gpio clear 77", 0);  //PCIEX1_0_SEL GPIO2_B5 LINK
 		printf("%s switch link\n", __func__);
+		is_link_board_exit = 1;
 		run_command("i2c dev 1", 0);
 		run_command("i2c mw 0x18 0x27 0x1", 0);		//switch to spi
 	}

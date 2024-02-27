@@ -555,7 +555,7 @@ static int do_spi_flash_test(int argc, char * const argv[])
 	return 0;
 }
 #endif /* CONFIG_CMD_SF_TEST */
-
+extern int is_link_board_exit;
 static int do_spi_flash(cmd_tbl_t *cmdtp, int flag, int argc,
 			char * const argv[])
 {
@@ -571,7 +571,15 @@ static int do_spi_flash(cmd_tbl_t *cmdtp, int flag, int argc,
 	++argv;
 
 	if (strcmp(cmd, "probe") == 0) {
+		if(!is_link_board_exit){
+			run_command("i2c dev 1", 0);
+			run_command("i2c mw 0x18 0x27 0x1", 0);		//switch to spi
+		}
 		ret = do_spi_flash_probe(argc, argv);
+		if(!is_link_board_exit){
+			run_command("i2c dev 1", 0);
+			run_command("i2c mw 0x18 0x27 0x0", 0);		//switch to UART of bt
+		}
 		goto done;
 	}
 

@@ -1383,6 +1383,10 @@ int android_bootloader_boot_flow(struct blk_desc *dev_desc,
 	env_update("bootargs", lcd_id_buf2);
 	extern char hdmi_out_mode[32];
 	env_update("bootargs", hdmi_out_mode);
+	char spi_buf[32] = {0};
+	extern int spi_state;
+	snprintf(spi_buf, 32, "spi_state=%d", spi_state);
+	env_update("bootargs", spi_buf);
 	debug("ANDROID: bootargs: \"%s\"\n", command_line);
 
 #ifdef CONFIG_SUPPORT_OEM_DTB
