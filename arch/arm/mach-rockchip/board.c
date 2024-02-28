@@ -394,7 +394,7 @@ static void cmdline_handle(void)
 	struct blk_desc *dev_desc;
 	int if_type;
 	int devnum;
-	char lcd_panel_buf[32] = {'\0'};
+	char args_buf[32] = {'\0'};
 
 	param_parse_pubkey_fuse_programmed();
 
@@ -437,17 +437,26 @@ static void cmdline_handle(void)
 
 	if (lcd_panel)
 	{
-		memset(lcd_panel_buf, 0, sizeof(lcd_panel_buf));
-		snprintf(lcd_panel_buf, sizeof(lcd_panel_buf), "lcd_panel=%s", lcd_panel);
-		env_update("bootargs", lcd_panel_buf);
+		memset(args_buf, 0, sizeof(args_buf));
+		snprintf(args_buf, sizeof(args_buf), "lcd_panel=%s", lcd_panel);
+		env_update("bootargs", args_buf);
 	}
 
 	lcd_panel = env_get("lcd_sec_panel");
 	printf("lcd_sec_panel: [%s]\n", lcd_panel);
 	if (lcd_panel) {
-		memset(lcd_panel_buf, 0, sizeof(lcd_panel_buf));
-		snprintf(lcd_panel_buf, sizeof(lcd_panel_buf), "lcd_sec_panel=%s", lcd_panel);
-		env_update("bootargs", lcd_panel_buf);
+		memset(args_buf, 0, sizeof(args_buf));
+		snprintf(args_buf, sizeof(args_buf), "lcd_sec_panel=%s", lcd_panel);
+		env_update("bootargs", args_buf);
+	}
+
+	/* add fan */
+	char * fan_mode = env_get("fan_mode");
+	printf("fan_mode: [%s]\n", fan_mode);
+	if (fan_mode) {
+		memset(args_buf, 0, sizeof(args_buf));
+		snprintf(args_buf, sizeof(args_buf), "fan=%s", fan_mode);
+		env_update("bootargs", args_buf);
 	}
 }
 

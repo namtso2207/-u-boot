@@ -573,6 +573,7 @@ int rockchip_read_dtb_file(void *fdt)
 	char * file_size = env_get("filesize_s");
 	unsigned long load_env_addr = 0;
 	unsigned long env_size = 0;
+	unsigned long uEuv_addr_offset = 0x200000;
 
 	if (strict_strtoul(env_addr, 16, &load_env_addr) < 0) {
 		printf("Get ramdisk_addr_r failed, set default.\n");
@@ -585,6 +586,24 @@ int rockchip_read_dtb_file(void *fdt)
 	}
 
 	/* load uEnv.txt */
+	memset(env_buf, 0, sizeof(env_buf));
+	snprintf(env_buf, sizeof(env_buf), "load mmc 0:6 0x%lx  /boot/uEnv.txt", load_env_addr+uEuv_addr_offset);
+	printf("cmd:%s\n", env_buf);
+	ret = run_command(env_buf, 0);
+	if (!ret) {
+		memset(env_buf, 0, sizeof(env_buf));
+		snprintf(env_buf, sizeof(env_buf), "env import -t 0x%lx 0x%lx", load_env_addr+uEuv_addr_offset, env_size);
+		printf("cmd:%s\n", env_buf);
+		ret = run_command(env_buf, 0);
+		if (ret) {
+			printf("env import failed\n");
+		}
+	} else {
+		printf("load /boot/uEnv.txt failed\n");
+	}
+
+	/* load dtb.overlay.env */
+	memset(env_buf, 0, sizeof(env_buf));
 	snprintf(env_buf, sizeof(env_buf), "load mmc 0:6 0x%lx  /boot/dtb/rockchip/rk3588-namtso-a10-3588.dtb.overlay.env", load_env_addr);
 	printf("cmd:%s\n", env_buf);
 	ret = run_command(env_buf, 0);
