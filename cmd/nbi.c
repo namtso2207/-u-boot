@@ -75,7 +75,7 @@
 #define FORCERESET_WOL      0
 
 #define VERSION_LENGHT        2
-#define USID_LENGHT           6
+#define USID_LENGHT           7
 #define MAC_LENGHT            6
 #define ADC_LENGHT            2
 #define PASSWD_CUSTOM_LENGHT  6
@@ -246,12 +246,51 @@ static int get_wol(bool is_print)
 }
 
 void eqos_get_hwaddr(unsigned char * mac);
+static void get_mac(void)
+{
+	char mac[64];
+	char mac_addr[MAC_LENGHT] = {0};
+	int i, mode;
+
+	mode = nbi_i2c_read(REG_MAC_SWITCH);
+
+	if (mode == 1) {
+		nbi_i2c_read_block(REG_MAC, MAC_LENGHT, mac_addr);
+	} else {
+		int ret;
+		ret = vendor_storage_init();
+		if (ret) {
+			printf("nbi: vendor_storage_init failed %d\n", ret);
+			return;
+		}
+
+		ret = vendor_storage_read(VENDOR_LAN_MAC_ID, mac_addr, MAC_LENGHT);
+		if (MAC_LENGHT == ret && !is_zero_ethaddr((const u8 *)mac_addr)) {
+			debug("read mac from vendor successfully!\n");
+		} else {
+			nbi_i2c_read_block(REG_MAC, MAC_LENGHT, mac_addr);
+		}
+	}
+	printf("mac address: ");
+	for (i=0; i<MAC_LENGHT; i++) {
+		if (i == (MAC_LENGHT-1))
+			printf("%02X",mac_addr[i]);
+		else
+			printf("%02X:",mac_addr[i]);
+	}
+	printf("\n");
+	sprintf(mac, "%02X:%02X:%02X:%02X:%02X:%02X",mac_addr[0],mac_addr[1],mac_addr[2],mac_addr[3],mac_addr[4],mac_addr[5]);
+	env_set("eth_mac", mac);
+}
+
 static void set_wol(bool is_shutdown, int enable)
 {
 	char cmd[64];
+	int mode;
 
 	if ((enable&0x01) != 0) {
 		unsigned char mac_addr[MAC_LENGHT] = {0};
+		char mac_addr2[MAC_LENGHT] = {0};
 		if (is_shutdown)
 			run_command("mdio write ethernet@fe1c0000 0 0", 0);
 		else
@@ -261,14 +300,27 @@ static void set_wol(bool is_shutdown, int enable)
 		run_command("mdio write ethernet@fe1c0000 0x16 0x20", 0);
 		run_command("mdio write ethernet@fe1c0000 0x1f 0", 0);
 
-		eqos_get_hwaddr(mac_addr);
+		mode = nbi_i2c_read(REG_MAC_SWITCH);
+		if (mode == 1) {
+			nbi_i2c_read_block(REG_MAC, MAC_LENGHT, mac_addr2);
+
+			mac_addr[0] = mac_addr2[0];
+			mac_addr[1] = mac_addr2[1];
+			mac_addr[2] = mac_addr2[2];
+			mac_addr[3] = mac_addr2[3];
+			mac_addr[4] = mac_addr2[4];
+			mac_addr[5] = mac_addr2[5];
+		} else {
+			eqos_get_hwaddr(mac_addr);
+			printf("hwaddr getmac = %s\n", mac_addr);
+		}
 
 		run_command("mdio write ethernet@fe1c0000 0x1f 0xd8c", 0);
-		sprintf(cmd, "mdio write ethernet@fe1c0000 0x10 0x%x%x", mac_addr[1], mac_addr[0]);
+		sprintf(cmd, "mdio write ethernet@fe1c0000 0x10 0x%02X%02X", mac_addr[1], mac_addr[0]);
 		run_command(cmd, 0);
-		sprintf(cmd, "mdio write ethernet@fe1c0000 0x11 0x%x%x", mac_addr[3], mac_addr[2]);
+		sprintf(cmd, "mdio write ethernet@fe1c0000 0x11 0x%02X%02X", mac_addr[3], mac_addr[2]);
 		run_command(cmd, 0);
-		sprintf(cmd, "mdio write ethernet@fe1c0000 0x12 0x%x%x", mac_addr[5], mac_addr[4]);
+		sprintf(cmd, "mdio write ethernet@fe1c0000 0x12 0x%02X%02X", mac_addr[5], mac_addr[4]);
 		run_command(cmd, 0);
 		run_command("mdio write ethernet@fe1c0000 0x1f 0", 0);
 
@@ -406,6 +458,12 @@ static void set_wdt_enable(int enable)
 	char cmd[64];
 	sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, REG_EN_WDT, enable);
 	run_command(cmd, 0);
+}
+
+static int do_nbi_ethmac(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
+{
+	get_mac();
+	return 0;
 }
 
 static int do_nbi_switchmac(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
@@ -585,7 +643,7 @@ static void get_usid(void)
 	char usid[USID_LENGHT] = {0};
 
 	nbi_i2c_read_block(REG_USID, USID_LENGHT, usid);
-	sprintf(serial, "%02X%02X%02X%02X%02X%02X",usid[0],usid[1],usid[2],usid[3],usid[4],usid[5]);
+	sprintf(serial, "%02X%02X%02X%02X%02X%02X%02X",usid[0],usid[1],usid[2],usid[3],usid[4],usid[5],usid[6]);
 	printf("usid:%s\r\n",serial);
 	env_set("usid", serial);
 }
@@ -1028,6 +1086,7 @@ static int do_kbi_forcereset(cmd_tbl_t * cmdtp, int flag, int argc, char * const
 static cmd_tbl_t cmd_nbi_sub[] = {
 	U_BOOT_CMD_MKENT(init, 1, 1, do_nbi_init, "", ""),
 	U_BOOT_CMD_MKENT(usid, 1, 1, do_nbi_usid, "", ""),
+	U_BOOT_CMD_MKENT(ethmac, 1, 1, do_nbi_ethmac, "", ""),
 	U_BOOT_CMD_MKENT(version, 1, 1, do_nbi_version, "", ""),
 	U_BOOT_CMD_MKENT(powerstate, 1, 1, do_nbi_powerstate, "", ""),
 	U_BOOT_CMD_MKENT(poweroff, 1, 1, do_nbi_poweroff, "", ""),
@@ -1069,6 +1128,7 @@ static char nbi_help_text[] =
 		"\n"
 		"nbi version - read version information\n"
 		"nbi usid - read usid information\n"
+		"nbi ethmac - read ethernet mac address\n"
 		"\n"
 		"nbi led [systemoff|systemon] w <off|on|breathe|heartbeat> - set blue led mode\n"
 		"nbi led [systemoff|systemon] r - read blue led mode\n"

@@ -89,13 +89,14 @@
 	"fi;"\
 	"\0"\
 	"wol_init="\
-        "nbi usid;"\
 	"nbi init;"\
 	"nbi powerstate;"\
+        "nbi ethmac;"\
+        "nbi usid;"\
 	"nbi trigger wol r;"\
 	"nbi trigger pcie_wol r;"\
         "sf probe 5:1;"\
-	"setenv bootargs ${bootargs} wol_enable=${wol_enable};"\
+	"setenv bootargs ${bootargs} wol_enable=${wol_enable} mac=${eth_mac} androidboot.mac=${eth_mac};"\
 	"if test ${power_state} = 1; then "\
 		"if test ${wol_enable} = 1; then "\
 			"nbi trigger wol w 1;"\
