@@ -1902,7 +1902,7 @@ printf("hlm rockchip_display_probe====== namtso_mipi_id=%d namtso_mipi_id2=%d\n"
 		}
 		else{
 			if(first_flag){
-				if(namtso_mipi_id2 == 2 || namtso_mipi_id2 == 4){
+				if(namtso_mipi_id2 == 0 || namtso_mipi_id2 == 2 || namtso_mipi_id2 == 4){
 					ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);//0 degrees
 					if (!ret)
 						memcpy(s->ulogo_name, name, strlen(name));
@@ -1919,7 +1919,7 @@ printf("hlm rockchip_display_probe====== namtso_mipi_id=%d namtso_mipi_id2=%d\n"
 						memcpy(s->klogo_name, name, strlen(name));
 				}
 			}else{
-				if(namtso_mipi_id == 2 || namtso_mipi_id == 4){
+				if(namtso_mipi_id2 == 0 || namtso_mipi_id == 2 || namtso_mipi_id == 4){
 					ret = ofnode_read_string_index(node, "logo,uboot", 0, &name);//0 degrees
 					if (!ret)
 						memcpy(s->ulogo_name, name, strlen(name));

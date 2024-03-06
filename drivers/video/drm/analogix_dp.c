@@ -1021,40 +1021,7 @@ static int analogix_dp_probe(struct udevice *dev)
 		(const struct rockchip_dp_chip_data *)dev_get_driver_data(dev);
 	struct udevice *syscon;
 	int ret;
-#ifdef CONFIG_CHECKEDP
-	char *p;
-	char *mode;
-	extern int namtso_mipi_id;
-	p = env_get("checkedp");
-	if (p != NULL) {
-		run_command_list(p, -1, 0);
-		//run_command("gpio set 133", 0);	//HDMI/EDP_SW GPIO4_A5 1：hdmi
-		run_command("gpio clear 133", 0);	//HDMI/EDP_SW GPIO4_A5 0: edp
-		mode = env_get("namtso_mipi_id");
-		printf("%s hlm mode=%s\n", __func__,mode);
-		if(strcmp(mode,"4") == 0)
-			namtso_mipi_id = 4;
-		printf("%s hlm namtso_mipi_id=%d\n", __func__,namtso_mipi_id);
-		if(namtso_mipi_id == 4){
-			run_command("fdt addr 0x08300000", 0);
-			run_command("fdt set /dsi@fde20000 status disable", 0);
-			run_command("fdt set /dsi@fde20000/panel@0 status disable", 0);
-			run_command("fdt set /dsi@fde20000/ports/port@0/endpoint@0 status disable", 0);
-			run_command("fdt set /display-subsystem/route/route-dsi0 status disable", 0);
-			printf("hlm dsi0 disable\n");
-		}
-		else{
-			run_command("fdt addr 0x08300000", 0);
-			run_command("fdt set /edp@fdec0000 status disable", 0);
-			run_command("fdt set /edp@fdec0000/ports/port@0/endpoint@2 status disable", 0);
-			run_command("fdt set /display-subsystem/route/route-edp0 status disable", 0);
-			run_command("fdt set /phy@fed60000 status disable", 0);
-			//run_command("fdt set /backlight-edp0 status disable", 0);
-			//run_command("fdt set /pwm@febd0020 status disable", 0);
-			printf("hlm edp0 disable\n");
-		}
-	}
-#endif
+
 	dp->reg_base = dev_read_addr_ptr(dev);
 
 	dp->id = of_alias_get_id(ofnode_to_np(dev->node), "edp");
