@@ -546,8 +546,10 @@ static void board_debug_init(void)
 		printf("Cmd interface: disabled\n");
 }
 
+int rk_board_init_ethernet(void);
 int board_init(void)
 {
+	rk_board_init_ethernet();
 	board_debug_init();
 #ifdef DEBUG
 	soc_clk_dump();

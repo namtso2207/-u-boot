@@ -88,6 +88,12 @@ int board_usb_cleanup(int index, enum usb_init_type init)
 
 #endif
 
+int rk_board_init_ethernet(void)
+{
+	run_command("gpio set 150", 0);		//GPIO4_C6
+	return 0;
+}
+
 int rk_board_init(void)
 {
 	int ret = 0;
@@ -108,7 +114,6 @@ int rk_board_init(void)
 	//run_command("gpio set 77", 0);	//GPIO2_B5  set wifi/bt
 	run_command("gpio set 137", 0);		//GPIO4_B1
 	run_command("gpio set 128", 0);		//GPIO4_A0
-	run_command("gpio set 150", 0);		//GPIO4_C6
 	run_command("gpio clear 146", 0);	//GPIO4_C2
 
 	pci_init();
