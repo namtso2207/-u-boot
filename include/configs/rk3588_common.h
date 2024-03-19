@@ -91,10 +91,17 @@
 	"nbi init;"\
 	"nbi powerstate;"\
 	"nbi trigger wol r;"\
+	"nbi trigger pcie_wol r;"\
 	"setenv bootargs ${bootargs} wol_enable=${wol_enable};"\
 	"if test ${power_state} = 1; then "\
-		"nbi trigger wol w 1;"\
-		"nbi poweroff;"\
+		"if test ${wol_enable} = 1; then "\
+			"nbi trigger wol w 1;"\
+			"nbi poweroff;"\
+		"fi;"\
+		"if test ${pcie_wol_enable} = 1; then "\
+			"nbi trigger pcie_wol w 1;"\
+			"nbi poweroff;"\
+		"fi;"\
 	"fi;"\
 	"\0"\
 	"check_reboot_mode=" \

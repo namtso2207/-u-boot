@@ -108,6 +108,8 @@ int rk_board_init(void)
 	run_command("gpio set 137", 0);		//GPIO4_B1
 	run_command("gpio set 128", 0);		//GPIO4_A0
 
+	pci_init();
+
 	ret = uclass_get_device_by_seq(UCLASS_I2C, TP_I2C_BUS_NUM, &bus);
 	if (ret) {
 		printf("%s: No bus %d\n", __func__, TP_I2C_BUS_NUM);
