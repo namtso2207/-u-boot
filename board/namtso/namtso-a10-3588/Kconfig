@@ -1,0 +1,15 @@
+if TARGET_NAMTSO_A10_3588
+
+config SYS_BOARD
+	default "namtso-a10-3588"
+
+config SYS_VENDOR
+	default "namtso"
+
+config SYS_CONFIG_NAME
+	default "namtso-a10-3588"
+
+config BOARD_SPECIFIC_OPTIONS # dummy
+	def_bool y
+
+endif
