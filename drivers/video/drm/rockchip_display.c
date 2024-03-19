@@ -437,13 +437,17 @@ static int display_get_timing_from_dts(struct rockchip_panel *panel,
 	if(first_flag){
 		if(namtso_mipi_id2 == 2){//TS101
 			   dt = dev_read_subnode(panel->dev, "display-timings1");
-		}else{//TS050
+		}else if(namtso_mipi_id2 == 3){//new TS050
+			   dt = dev_read_subnode(panel->dev, "display-timings2");
+		}else{//old TS050
 			   dt = dev_read_subnode(panel->dev, "display-timings");
 		}
 	} else {
 		if(namtso_mipi_id == 2){//TS101
 			   dt = dev_read_subnode(panel->dev, "display-timings1");
-		}else{//TS050
+		}else if(namtso_mipi_id == 3){//new TS050
+			   dt = dev_read_subnode(panel->dev, "display-timings2");
+		}else{//old TS050
 			   dt = dev_read_subnode(panel->dev, "display-timings");
 		}
 	}
