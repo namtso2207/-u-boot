@@ -24,7 +24,7 @@
 
 #define REG_MAC					0x0
 #define REG_USID                0x12
-#define REG_VERSION             0x19
+#define REG_VERSION             0x1D
 #define REG_BOOT_MODE           0x20
 #define REG_BOOT_EN_WOL			0x21
 #define REG_BOOT_EN_RTC         0x22
