@@ -75,7 +75,7 @@
 #define FORCERESET_WOL      0
 
 #define VERSION_LENGHT        2
-#define USID_LENGHT           7
+#define USID_LENGHT           9
 #define MAC_LENGHT            6
 #define ADC_LENGHT            2
 #define PASSWD_CUSTOM_LENGHT  6
@@ -643,7 +643,7 @@ static void get_usid(void)
 	char usid[USID_LENGHT] = {0};
 
 	nbi_i2c_read_block(REG_USID, USID_LENGHT, usid);
-	sprintf(serial, "%02X%02X%02X%02X%02X%02X%02X",usid[0],usid[1],usid[2],usid[3],usid[4],usid[5],usid[6]);
+	sprintf(serial, "%02X%02X%02X%02X%02X%02X%02X%02X%01X",usid[0],usid[1],usid[2],usid[3],usid[4],usid[5],usid[6],usid[7],usid[8]);
 	printf("usid:%s\r\n",serial);
 	env_set("usid", serial);
 }
