@@ -120,6 +120,25 @@ static int rtl8211f_config(struct phy_device *phydev)
 
 	genphy_config_aneg(phydev);
 
+	/* Config register */
+	phy_write(phydev, MDIO_DEVAD_NONE,
+		  MIIM_RTL8211F_PAGE_SELECT, 0x0);
+	phy_write(phydev, MDIO_DEVAD_NONE, 4, 0xde1);
+	phy_write(phydev, MDIO_DEVAD_NONE, 7, 0x2801);
+	phy_write(phydev, MDIO_DEVAD_NONE, 13, 0x4007);
+
+	phy_write(phydev, MDIO_DEVAD_NONE,
+		  MIIM_RTL8211F_PAGE_SELECT, 0xa42);
+	phy_write(phydev, MDIO_DEVAD_NONE, 18, 0x0);
+
+	phy_write(phydev, MDIO_DEVAD_NONE,
+		  MIIM_RTL8211F_PAGE_SELECT, 0xa43);
+	phy_write(phydev, MDIO_DEVAD_NONE, 24, 0x311e);
+
+	phy_write(phydev, MDIO_DEVAD_NONE,
+		  MIIM_RTL8211F_PAGE_SELECT, 0xd08);
+	phy_write(phydev, MDIO_DEVAD_NONE, 21, 0x19);
+
 	return 0;
 }
 
