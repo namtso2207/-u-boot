@@ -12,8 +12,11 @@
 #include <rockusb.h>
 #include <i2c.h>
 #include <dm.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <asm/gpio.h>
 
-#define TP_I2C_BUS_NUM (0)
+#define TP_I2C_BUS_NUM 		(0)
+#define TP2_I2C_BUS_NUM		(6)
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -94,6 +97,45 @@ int rk_board_init_ethernet(void)
 	return 0;
 }
 
+int rk_board_init_lcd(void)
+{
+	unsigned long default_fdt_addr = 0x08300000;
+	char * fdt_addr = env_get("fdt_addr_r");
+	unsigned long load_fdt_addr = 0;
+	char cmd_buf[64] = {'\0'};
+
+	if (strict_strtoul(fdt_addr, 16, &load_fdt_addr) < 0) {
+		printf("Get fdt_addr failed, set default.\n");
+		load_fdt_addr = default_fdt_addr;
+	}
+	snprintf(cmd_buf, sizeof(cmd_buf), "fdt addr 0x%lx", load_fdt_addr);
+	run_command(cmd_buf, 0);
+
+	char * lcd_panel = env_get("lcd_panel");
+	if (NULL != lcd_panel) {
+		if (!strcmp("null", lcd_panel)) {
+			printf("disable dsi0 mipi panel.\n");
+			run_command("fdt set /dsi@fde20000 status disable", 0);
+			run_command("fdt set /dsi@fde20000/panel@0 status disable", 0);
+			run_command("fdt set /dsi@fde20000/ports/port@0/endpoint@1 status disable", 0);
+			run_command("fdt set /display-subsystem/route/route-dsi0 status disable", 0);
+		}
+	}
+
+	lcd_panel = env_get("lcd_sec_panel");
+	if (NULL != lcd_panel) {
+		if (!strcmp("null", lcd_panel)) {
+			printf("disable dsi1 mipi panel.\n");
+			run_command("fdt set /dsi@fde30000 status disable", 0);
+			run_command("fdt set /dsi@fde30000/panel@0 status disable", 0);
+			run_command("fdt set /dsi@fde30000/ports/port@0/endpoint@0 status disable", 0);
+			run_command("fdt set /display-subsystem/route/route-dsi1 status disable", 0);
+		}
+	}
+
+	return 0;
+}
+
 int rk_board_init(void)
 {
 	int ret = 0;
@@ -135,7 +177,7 @@ int rk_board_init(void)
 	if (!ret) {
 		res = dm_i2c_read(dev, 0xA8, linebuf, 1);
 		if (!res) {
-			printf("TP05 id=0x%x\n", linebuf[0]);
+			printf("bus:0x%x TP05 id=0x%x\n", TP_I2C_BUS_NUM, linebuf[0]);
 			if (linebuf[0] == 0x51){//old ts050
 				env_set("lcd_panel","ts050");
 			} else if (linebuf[0] == 0x79) {//new ts050
@@ -148,7 +190,7 @@ int rk_board_init(void)
 		if (!ret) {
 			res = dm_i2c_read(dev, 0x9e, linebuf, 1);
 			if (!res) {
-				printf("TP10 id=0x%x\n", linebuf[0]);
+				printf("bus:0x%x TP10 id=0x%x\n", TP_I2C_BUS_NUM, linebuf[0]);
 				if (linebuf[0] == 0x00) {//TS101
 					env_set("lcd_panel","ts101");
 				}
@@ -158,6 +200,41 @@ int rk_board_init(void)
 		}
 	}
 
+	ret = uclass_get_device_by_seq(UCLASS_I2C, TP2_I2C_BUS_NUM, &bus);
+	if (ret) {
+		printf("%s: No bus %d\n", __func__, TP2_I2C_BUS_NUM);
+		return 0;
+	}
+	ret = i2c_get_chip(bus, 0x38, 1, &dev);
+	if (!ret) {
+		res = dm_i2c_read(dev, 0xA8, linebuf, 1);
+		if (!res) {
+			printf("bus:0x%x TP05 id=0x%x\n", TP2_I2C_BUS_NUM, linebuf[0]);
+			if (linebuf[0] == 0x51){//old ts050
+				env_set("lcd_sec_panel","ts050");
+			} else if (linebuf[0] == 0x79) {//new ts050
+				env_set("lcd_sec_panel","newts050");
+			}
+		}
+	}
+	if (ret || res) {
+		ret = i2c_get_chip(bus, 0x14, 1, &dev);
+		if (!ret) {
+			res = dm_i2c_read(dev, 0x9e, linebuf, 1);
+			if (!res) {
+				printf("bus:0x%x TP10 id=0x%x\n", TP2_I2C_BUS_NUM, linebuf[0]);
+				if (linebuf[0] == 0x00) {//TS101
+					env_set("lcd_sec_panel","ts101");
+				}
+			} else {
+				env_set("lcd_sec_panel","null");
+			}
+		}
+	}
+
+	rk_board_init_lcd();
+
 	return 0;
 
 }
+

@@ -20,6 +20,9 @@
 #include <spl_display.h>
 #include <clk.h>
 
+#define DSI0_NODE		("dsi@fde20000.0")
+#define DSI1_NODE		("dsi@fde30000.0")
+
 /*
  * major: IP major version, used for IP structure
  * minor: big feature change under same structure

@@ -438,10 +438,16 @@ static int rockchip_panel_ofdata_to_platdata(struct udevice *dev)
 						MEDIA_BUS_FMT_RBG888_1X24);
 	plat->bpc = dev_read_u32_default(dev, "bpc", 8);
 
-	if (!strcmp(env_get("lcd_panel"), "newts050")){
-		data = dev_read_prop(dev, "panel-init-sequence2", &len);
-	} else {
-		data = dev_read_prop(dev, "panel-init-sequence", &len);
+	data = dev_read_prop(dev, "panel-init-sequence", &len);
+	if (!strncmp(DSI0_NODE, dev->name, strlen(dev->name))) {
+		if (!strcmp(env_get("lcd_panel"), "newts050")) {
+			data = dev_read_prop(dev, "panel-init-sequence2", &len);
+		}
+	}
+	if (!strncmp(DSI1_NODE, dev->name, strlen(dev->name))) {
+		if (!strcmp(env_get("lcd_sec_panel"), "newts050")) {
+			data = dev_read_prop(dev, "panel-init-sequence2", &len);
+		}
 	}
 
 	if (data) {

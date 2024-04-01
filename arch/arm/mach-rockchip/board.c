@@ -441,6 +441,14 @@ static void cmdline_handle(void)
 		snprintf(lcd_panel_buf, sizeof(lcd_panel_buf), "lcd_panel=%s", lcd_panel);
 		env_update("bootargs", lcd_panel_buf);
 	}
+
+	lcd_panel = env_get("lcd_sec_panel");
+	printf("lcd_sec_panel: [%s]\n", lcd_panel);
+	if (lcd_panel) {
+		memset(lcd_panel_buf, 0, sizeof(lcd_panel_buf));
+		snprintf(lcd_panel_buf, sizeof(lcd_panel_buf), "lcd_sec_panel=%s", lcd_panel);
+		env_update("bootargs", lcd_panel_buf);
+	}
 }
 
 static void scan_run_cmd(void)
