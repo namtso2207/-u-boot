@@ -97,20 +97,8 @@ int rk_board_init_ethernet(void)
 	return 0;
 }
 
-int rk_board_init_lcd(void)
+int board_set_lcd_enable(void)
 {
-	unsigned long default_fdt_addr = 0x08300000;
-	char * fdt_addr = env_get("fdt_addr_r");
-	unsigned long load_fdt_addr = 0;
-	char cmd_buf[64] = {'\0'};
-
-	if (strict_strtoul(fdt_addr, 16, &load_fdt_addr) < 0) {
-		printf("Get fdt_addr failed, set default.\n");
-		load_fdt_addr = default_fdt_addr;
-	}
-	snprintf(cmd_buf, sizeof(cmd_buf), "fdt addr 0x%lx", load_fdt_addr);
-	run_command(cmd_buf, 0);
-
 	char * lcd_panel = env_get("lcd_panel");
 	if (NULL != lcd_panel) {
 		if (!strcmp("null", lcd_panel)) {
@@ -136,6 +124,24 @@ int rk_board_init_lcd(void)
 	return 0;
 }
 
+int board_init_lcd(void)
+{
+	unsigned long default_fdt_addr = 0x08300000;
+	char * fdt_addr = env_get("fdt_addr_r");
+	unsigned long load_fdt_addr = 0;
+	char cmd_buf[64] = {'\0'};
+
+	if (strict_strtoul(fdt_addr, 16, &load_fdt_addr) < 0) {
+		printf("Get fdt_addr failed, set default.\n");
+		load_fdt_addr = default_fdt_addr;
+	}
+	snprintf(cmd_buf, sizeof(cmd_buf), "fdt addr 0x%lx", load_fdt_addr);
+	run_command(cmd_buf, 0);
+	board_set_lcd_enable();
+
+	return 0;
+}
+
 int rk_board_init(void)
 {
 	int ret = 0;
@@ -152,8 +158,6 @@ int rk_board_init(void)
 	run_command("gpio set 85", 0);		//GPIO2_C5
 	//run_command("gpio set 140", 0);	//GPIO4_B4
 	run_command("gpio clear 140", 0);
-	run_command("gpio clear 77", 0);	//GPIO2_B5  set link
-	//run_command("gpio set 77", 0);	//GPIO2_B5  set wifi/bt
 	run_command("gpio set 137", 0);		//GPIO4_B1
 	run_command("gpio set 128", 0);		//GPIO4_A0
 	run_command("gpio clear 146", 0);	//GPIO4_C2
@@ -231,8 +235,7 @@ int rk_board_init(void)
 			}
 		}
 	}
-
-	rk_board_init_lcd();
+	board_init_lcd();
 
 	return 0;
 

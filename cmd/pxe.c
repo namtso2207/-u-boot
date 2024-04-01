@@ -871,6 +871,7 @@ static void env_helper(cmd_tbl_t *cmdtp, struct pxe_label *label)
  * If the label specifies an 'append' line, its contents will overwrite that
  * of the 'bootargs' environment variable.
  */
+int board_set_lcd_enable(void);
 static int label_boot(cmd_tbl_t *cmdtp, struct pxe_label *label)
 {
 	char *bootm_argv[] = { "bootm", NULL, NULL, NULL, NULL };
@@ -1050,6 +1051,9 @@ static int label_boot(cmd_tbl_t *cmdtp, struct pxe_label *label)
 			// Remove bootargs from device tree, ubuntu don't need it
 			printf("Removing bootargs from device tree.\n");
 			run_command("fdt addr ${fdt_addr_r}; fdt resize 65536; fdt set /chosen bootargs;", 0);
+
+			/* set lcd enable/disable */
+			board_set_lcd_enable();
 		} else {
 			bootm_argv[3] = NULL;
 		}
