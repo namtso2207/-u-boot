@@ -657,6 +657,11 @@ static int do_nbi_init(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[
 
 	run_command("i2c dev 1", 0);
 
+	enable = nbi_i2c_read(REG_MAC);
+	printf("nbi: nbi_i2c_read(REG_MAC) = %d\n", enable);
+	if(enable)
+		set_switch_mac(1);
+
 	enable = get_wol(true);
 	if ((enable&0x01) != 0)
 		set_wol(false, enable);
