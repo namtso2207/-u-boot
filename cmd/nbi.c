@@ -24,7 +24,7 @@
 
 #define REG_MAC					0x0
 #define REG_USID				0x12
-#define REG_VERSION				0x19
+#define REG_VERSION				0x1D
 #define REG_BOOT_MODE			0x20
 #define REG_BOOT_EN_WOL			0x21
 #define REG_BOOT_EN_RTC			0x22
@@ -49,7 +49,10 @@
 #define REG_SYS_OOPS			0x86
 //#define REG_BOOT_FLAG			0x87
 #define REG_INIT_PCIE_WOL		0x89
-
+#define DC_OUT_REG				0x2F
+#define BOOT_FLAG_REG			0x87
+#define LINK_DET_REG			0x88
+#define LINK_5V_POWER_REG		0x8A
 
 #define BOOT_EN_WOL				0
 #define BOOT_EN_RTC				1
@@ -76,8 +79,9 @@
 #define FORCERESET_WOL			0
 
 #define VERSION_LENGHT			2
-#define USID_LENGHT				6
+#define USID_LENGHT				9
 #define MAC_LENGHT				6
+#define MAC_ALL_LENGHT			18
 #define ADC_LENGHT				2
 #define PASSWD_CUSTOM_LENGHT	6
 #define PASSWD_VENDOR_LENGHT	6
@@ -341,49 +345,20 @@ static void set_dcin(int enable)
 	run_command(cmd, 0);
 }
 
-static void get_lpwr(void)
+static void get_switch_mac(int index)
 {
-	int enable;
-	enable = nbi_i2c_read(REG_BOOT_EN_LPWR);
-	printf("en lpwr: %s\n", enable==1 ? "enable" : "disable" );
+	int offset = index-1;
+	int mode = nbi_i2c_read(REG_MAC_SWITCH+offset);
+	printf("switch mac[%d] from %d\n", index, mode);
 }
 
-static void set_lpwr(int enable)
+static void set_switch_mac(int index, int mode)
 {
-	char cmd[64];
-	sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, REG_BOOT_EN_LPWR, enable);
+	char cmd[64] = {'\0'};
+	int offset = index-1;
+	sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, REG_MAC_SWITCH+offset, mode);
+	printf("set_switch_mac[%d]:%d\n", index, mode);
 	run_command(cmd, 0);
-}
-
-static void get_upwr(void)
-{
-	int enable;
-	enable = nbi_i2c_read(REG_BOOT_EN_UPWR);
-	printf("en upwr: %s\n", enable==1 ? "enable" : "disable" );
-}
-
-static void set_upwr(int enable)
-{
-	char cmd[64];
-	sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, REG_BOOT_EN_UPWR, enable);
-	run_command(cmd, 0);
-}
-
-static void get_switch_mac(void)
-{
-	int mode;
-	mode = nbi_i2c_read(REG_MAC_SWITCH);
-	printf("switch mac from %d\n", mode);
-	env_set("switch_mac", mode==1 ? "1" : "0");
-}
-
-static void set_switch_mac(int mode)
-{
-	char cmd[64];
-	sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, REG_MAC_SWITCH, mode);
-	printf("set_switch_mac :%d\n", mode);
-	run_command(cmd, 0);
-	env_set("switch_mac", mode==1 ? "1" : "0");
 }
 
 static void get_mcu_sleep_enable(void)
@@ -417,22 +392,37 @@ static void set_wdt_enable(int enable)
 static int do_nbi_switchmac(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
 
-	if (argc < 2)
+	if (argc < 3)
 		return CMD_RET_USAGE;
 
-	if (strcmp(argv[1], "w") == 0) {
+	if (strcmp(argv[2], "w") == 0) {
 		if (argc < 3)
 			return CMD_RET_USAGE;
 
-		if (strcmp(argv[2], "0") == 0) {
-			set_switch_mac(0);
+		if (strcmp(argv[3], "0") == 0) {
+			if (strcmp(argv[1], "mac1") == 0)
+				set_switch_mac(1, 0);
+			else if (strcmp(argv[1], "mac2") == 0)
+				set_switch_mac(2, 0);
+			else if (strcmp(argv[1], "mac3") == 0)
+				set_switch_mac(3, 0);
 		} else if (strcmp(argv[2], "1") == 0) {
-			set_switch_mac(1);
+			if (strcmp(argv[1], "mac1") == 0)
+				set_switch_mac(1, 1);
+			else if (strcmp(argv[1], "mac2") == 0)
+				set_switch_mac(2, 1);
+			else if (strcmp(argv[1], "mac3") == 0)
+				set_switch_mac(3, 1);
 		} else {
 			return CMD_RET_USAGE;
 		}
-	} else if (strcmp(argv[1], "r") == 0) {
-		get_switch_mac();
+	} else if (strcmp(argv[1], "2") == 0) {
+		if (strcmp(argv[1], "mac1") == 0)
+			get_switch_mac(1);
+		else if (strcmp(argv[1], "mac2") == 0)
+			get_switch_mac(2);
+		else if (strcmp(argv[1], "mac3") == 0)
+			get_switch_mac(3);
 	} else {
 		return CMD_RET_USAGE;
 	}
@@ -449,10 +439,6 @@ static void get_boot_enable(int type)
 		get_rtc();
 	else if (type == BOOT_EN_DCIN)
 		get_dcin();
-	else if (type == BOOT_EN_LPWR)
-		get_lpwr();
-	else if (type == BOOT_EN_UPWR)
-		get_upwr();
 	else if (type == BOOT_EN_MCU_SLEEP)
 		get_mcu_sleep_enable();
 	else if (type == BOOT_EN_WDT)
@@ -474,10 +460,6 @@ static void set_boot_enable(int type, int enable)
 		set_rtc(enable);
 	else if (type == BOOT_EN_DCIN)
 		set_dcin(enable);
-	else if (type == BOOT_EN_LPWR)
-		set_lpwr(enable);
-	else if (type == BOOT_EN_UPWR)
-		set_upwr(enable);
 	else if (type == BOOT_EN_MCU_SLEEP)
 		set_mcu_sleep(enable);
 	else if (type == BOOT_EN_WDT)
@@ -491,18 +473,14 @@ static int do_nbi_trigger(cmd_tbl_t * cmdtp, int flag, int argc, char * const ar
 
 	if (strcmp(argv[2], "r") == 0) {
 
-		if (strcmp(argv[1], "wol") == 0)
+		if (strcmp(argv[1], "board_wol") == 0)
 			get_boot_enable(BOOT_EN_WOL);
-		else if (strcmp(argv[1], "pcie_wol") == 0)
+		else if (strcmp(argv[1], "nlink_wol") == 0)
 			get_boot_enable(BOOT_EN_PCIE_WOL);
 		else if (strcmp(argv[1], "rtc") == 0)
 			get_boot_enable(BOOT_EN_RTC);
 		else if (strcmp(argv[1], "dcin") == 0)
 			get_boot_enable(BOOT_EN_DCIN);
-		else if (strcmp(argv[1], "lpwr") == 0)
-			get_boot_enable(BOOT_EN_LPWR);
-		else if (strcmp(argv[1], "upwr") == 0)
-			get_boot_enable(BOOT_EN_UPWR);
 		else if (strcmp(argv[1], "mcu_en_sleep") == 0)
 			get_boot_enable(BOOT_EN_MCU_SLEEP);
 		else if (strcmp(argv[1], "wdt") == 0)
@@ -515,14 +493,14 @@ static int do_nbi_trigger(cmd_tbl_t * cmdtp, int flag, int argc, char * const ar
 		if ((strcmp(argv[3], "1") != 0) && (strcmp(argv[3], "0") != 0))
 			return CMD_RET_USAGE;
 
-		if (strcmp(argv[1], "wol") == 0) {
+		if (strcmp(argv[1], "board_wol") == 0) {
 
 			if (strcmp(argv[3], "1") == 0)
 				set_boot_enable(BOOT_EN_WOL, 1);
 			else
 				set_boot_enable(BOOT_EN_WOL, 0);
 
-	    } else if (strcmp(argv[1], "pcie_wol") == 0) {
+	    } else if (strcmp(argv[1], "nlink_wol") == 0) {
 			if (strcmp(argv[3], "1") == 0)
 				set_boot_enable(BOOT_EN_PCIE_WOL, 1);
 			else
@@ -541,16 +519,6 @@ static int do_nbi_trigger(cmd_tbl_t * cmdtp, int flag, int argc, char * const ar
 			else
 				set_boot_enable(BOOT_EN_DCIN, 0);
 
-		} else if (strcmp(argv[1], "lpwr") == 0) {
-			if (strcmp(argv[3], "1") == 0)
-				set_boot_enable(BOOT_EN_LPWR, 1);
-			else
-				set_boot_enable(BOOT_EN_LPWR, 0);
-		} else if (strcmp(argv[1], "upwr") == 0) {
-			if (strcmp(argv[3], "1") == 0)
-				set_boot_enable(BOOT_EN_UPWR, 1);
-			else
-				set_boot_enable(BOOT_EN_UPWR, 0);
 		} else if (strcmp(argv[1], "mcu_en_sleep") == 0) {
 			if (strcmp(argv[3], "1") == 0)
 				set_boot_enable(BOOT_EN_MCU_SLEEP, 1);
@@ -570,30 +538,6 @@ static int do_nbi_trigger(cmd_tbl_t * cmdtp, int flag, int argc, char * const ar
 	}
 
 	return 0;
-}
-
-static void get_version(void)
-{
-	char version[VERSION_LENGHT] = {};
-	int i;
-
-	nbi_i2c_read_block(REG_VERSION, VERSION_LENGHT, version);
-	printf("version: ");
-	for (i=0; i< VERSION_LENGHT; i++) {
-		printf("%02x ",version[i]);
-	}
-	printf("\n");
-}
-
-static void get_usid(void)
-{
-	char serial[64]={0};
-	char usid[USID_LENGHT] = {0};
-
-	nbi_i2c_read_block(REG_USID, USID_LENGHT, usid);
-	sprintf(serial, "%02X%02X%02X%02X%02X%02X",usid[0],usid[1],usid[2],usid[3],usid[4],usid[5]);
-	printf("usid:%s\r\n",serial);
-	env_set("usid", serial);
 }
 
 static int do_nbi_init(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
@@ -617,13 +561,34 @@ static int do_nbi_init(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[
 
 static int do_nbi_version(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
-	get_version();
+	char version[VERSION_LENGHT] = {'\0'};
+	int i = 0;
+	nbi_i2c_read_block(REG_VERSION, VERSION_LENGHT, version);
+	printf("version: ");
+	for (i=0; i<VERSION_LENGHT; i++) {
+		printf("%02x", version[i]);
+		if (0 == i) {
+			printf(".");
+		}
+	}
+	printf("\n");
 	return 0;
 }
 
 static int do_nbi_usid(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
-	get_usid();
+	char serial[64]={'\0'};
+	char usid[USID_LENGHT] = {'\0'};
+	int i = 0;
+
+	nbi_i2c_read_block(REG_USID, USID_LENGHT, usid);
+
+	for (i=0; i<USID_LENGHT-1; i++) {
+		snprintf(serial+i, sizeof(serial), "%02X", usid[i]);
+	}
+	snprintf(serial+i, sizeof(serial), "%X", (usid[i]&0xf0)>>4);
+	printf("usid:%s\n",serial);
+	env_set("usid", serial);
 	return 0;
 }
 
@@ -675,25 +640,6 @@ static int do_nbi_bootmode(cmd_tbl_t * cmdtp, int flag, int argc, char * const a
 	return 0;
 }
 
-static void get_sys_led_mode(int type)
-{
-	int mode;
-	if (type == LED_SYSTEM_OFF) {
-		mode = nbi_i2c_read(REG_LED_OFF_SYS);
-		if ((mode >= 0) && (mode <=3) )
-		printf("led mode: %s  [systemoff]\n",LED_MODE_STR[mode]);
-		else
-		printf("read led mode err\n");
-	}
-	else {
-		mode = nbi_i2c_read(REG_LED_ON_SYS);
-		if ((mode >= LED_OFF_MODE) && (mode <= LED_HEARTBEAT_MODE))
-		printf("led mode: %s  [systemon]\n",LED_MODE_STR[mode]);
-		else
-		printf("read led mode err\n");
-	}
-}
-
 static void get_user_led_mode(void)
 {
 	int mode;
@@ -712,65 +658,13 @@ static int set_user_led_mode(int mode)
 	return 0;
 }
 
-static int set_sys_led_mode(int type, int mode)
-{
-	char cmd[64];
-	if (type == LED_SYSTEM_OFF) {
-		sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, REG_LED_OFF_SYS, mode);
-	} else if (type == LED_SYSTEM_ON) {
-		sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, REG_LED_ON_SYS, mode);
-	} else {
-		return CMD_RET_USAGE;
-	}
-
-	run_command(cmd, 0);
-	return 0;
-}
-
 static int do_nbi_led(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
 	int ret = 0;
 	if (argc < 3)
 		return CMD_RET_USAGE;
 
-	if (strcmp(argv[1], "systemoff") ==0) {
-		if (strcmp(argv[2], "r") == 0) {
-			get_sys_led_mode(LED_SYSTEM_OFF);
-		} else if (strcmp(argv[2], "w") == 0) {
-			if (argc < 4)
-				return CMD_RET_USAGE;
-			if (strcmp(argv[3], "breathe") == 0) {
-				ret = set_sys_led_mode(LED_SYSTEM_OFF, LED_BREATHE_MODE);
-			} else if (strcmp(argv[3], "heartbeat") == 0) {
-				ret = set_sys_led_mode(LED_SYSTEM_OFF, LED_HEARTBEAT_MODE);
-			} else if (strcmp(argv[3], "on") == 0) {
-				ret = set_sys_led_mode(LED_SYSTEM_OFF, LED_ON_MODE);
-			} else if (strcmp(argv[3], "off") == 0) {
-				ret = set_sys_led_mode(LED_SYSTEM_OFF, LED_OFF_MODE);
-			} else {
-				ret =  CMD_RET_USAGE;
-			}
-		}
-	} else if (strcmp(argv[1], "systemon") ==0) {
-
-		if (strcmp(argv[2], "r") == 0) {
-			get_sys_led_mode(LED_SYSTEM_ON);
-		} else if (strcmp(argv[2], "w") == 0) {
-			if (argc <4)
-				return CMD_RET_USAGE;
-			if (strcmp(argv[3], "breathe") == 0) {
-				ret = set_sys_led_mode(LED_SYSTEM_ON, LED_BREATHE_MODE);
-			} else if (strcmp(argv[3], "heartbeat") == 0) {
-				ret = set_sys_led_mode(LED_SYSTEM_ON, LED_HEARTBEAT_MODE);
-			} else if (strcmp(argv[3], "on") == 0) {
-				ret = set_sys_led_mode(LED_SYSTEM_ON, LED_ON_MODE);
-			} else if (strcmp(argv[3], "off") == 0) {
-				ret = set_sys_led_mode(LED_SYSTEM_ON, LED_OFF_MODE);
-			} else {
-				ret =  CMD_RET_USAGE;
-			}
-		}
-	} else if (strcmp(argv[1], "user") ==0) {
+	if (strcmp(argv[1], "user") ==0) {
 		if (strcmp(argv[2], "r") == 0) {
 			get_user_led_mode();
 		} else if (strcmp(argv[2], "w") == 0) {
@@ -821,8 +715,6 @@ static int do_nbi_reset_sys(cmd_tbl_t * cmdtp, int flag, int argc, char * const 
 		sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, REG_SYS_RST, 1);
 	else if (strcmp(argv[2], "2") == 0)
 		sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, REG_SYS_RST, 2);
-	else if (strcmp(argv[2], "3") == 0)
-		sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, REG_SYS_RST, 3);
 	else
 		return CMD_RET_USAGE;
 
@@ -866,19 +758,6 @@ static int do_nbi_wol_init(cmd_tbl_t * cmdtp, int flag, int argc, char * const a
 	sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, REG_INIT_PCIE_WOL, 0);
 	run_command(cmd, 0);
 
-	return 0;
-}
-
-static int do_nbi_sys_status(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
-{
-	int status = 0;
-	status = nbi_i2c_read(REG_LED_USER);
-	if (0 == status)
-		printf("sys status: [%d], normal power off\n", status);
-	else if (1 == status)
-		printf("sys status: [%d], abnormal power off\n", status);
-	else
-		printf("read sys status err\n");
 	return 0;
 }
 
@@ -1040,24 +919,169 @@ static int do_kbi_forcereset(cmd_tbl_t * cmdtp, int flag, int argc, char * const
 	return ret;
 }
 
+static int do_mac_info(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
+{
+	char mac_all[MAC_ALL_LENGHT] = {'\0'};
+	int i = 0;
+
+	nbi_i2c_read_block(REG_MAC, MAC_ALL_LENGHT, mac_all);
+	printf("mac info:\n");
+
+	for (i=0; i<MAC_ALL_LENGHT; i++) {
+		if (0 == i%MAC_LENGHT) {
+			printf("MAC%d: ", i/MAC_LENGHT+1);
+		}
+		printf("%02x", mac_all[i]);
+		if ((MAC_LENGHT-1 != i) && (2*MAC_LENGHT-1 != i) && (3*MAC_LENGHT-1 != i)) {
+			printf(":");
+		} else {
+			printf("\n");
+		}
+	}
+	return 0;
+}
+
+static void set_dc_out(int value)
+{
+	char cmd[64] = {'\0'};
+	sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, DC_OUT_REG, value);
+	printf("set dc out mode: 0x%x\n", value);
+	run_command(cmd, 0);
+}
+
+static void get_dc_out(void)
+{
+	int val = nbi_i2c_read(DC_OUT_REG);
+	printf("get dc out mode: 0x%x\n", val);
+}
+
+static int do_nbi_dc_out(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
+{
+	if (argc < 2)
+		return CMD_RET_USAGE;
+
+	if (strcmp(argv[1], "w") == 0) {
+		if (strcmp(argv[2], "0") == 0) {
+			set_dc_out(0);
+		} else if (strcmp(argv[2], "1") == 0) {
+			set_dc_out(1);
+		} else if (strcmp(argv[2], "2") == 0) {
+			set_dc_out(2);
+		} else {
+			return CMD_RET_USAGE;
+		}
+	} else if (strcmp(argv[1], "r") == 0) {
+		get_dc_out();
+	} else {
+		return CMD_RET_USAGE;
+	}
+	return 0;
+}
+
+static int do_nbi_boot_flag(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
+{
+	int val;
+	val = nbi_i2c_read(BOOT_FLAG_REG);
+	switch (val)
+	{
+		case 0:
+			printf("normal run\n");
+			break;
+		case 1:
+			printf("function key press， boot from spi\n");
+			break;
+		case 2:
+			printf("reset， boot from spi\n");
+			break;
+		case 3:
+			printf("reset，boot from emmc\n");
+			break;
+		case 4:
+			printf("reset，power key press, boot from emmc\n");
+			break;
+		default:
+			break;
+	}
+	return 0;
+}
+
+static int do_nbi_link(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
+{
+	int val;
+	val = nbi_i2c_read(LINK_DET_REG);
+	switch (val)
+	{
+		case 0:
+			printf("Link insert\n");
+			break;
+		case 1:
+			printf("No Link insert\n");
+			break;
+		default:
+			break;
+	}
+	return 0;
+}
+
+
+static void set_link_5v_enable(int value)
+{
+	char cmd[64] = {'\0'};
+	sprintf(cmd, "i2c mw %x %x %d 1",CHIP_ADDR, LINK_5V_POWER_REG, value);
+	printf("set set_link_5v_enable: 0x%x\n", value);
+	run_command(cmd, 0);
+}
+
+static void get_link_5v_enable(void)
+{
+	int val = nbi_i2c_read(LINK_5V_POWER_REG);
+	printf("get set_link_5v_enable: 0x%x\n", val);
+}
+
+static int do_nbi_link_en_5v(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
+{
+	if (argc < 2) {
+		return CMD_RET_USAGE;
+	}
+
+	if (strcmp(argv[1], "w") == 0) {
+		if (strcmp(argv[2], "0") == 0) {
+			set_link_5v_enable(0);
+		} else if (strcmp(argv[2], "1") == 0) {
+			set_link_5v_enable(1);
+		} else {
+			return CMD_RET_USAGE;
+		}
+	} else if (strcmp(argv[1], "r") == 0) {
+		get_link_5v_enable();
+	} else {
+		return CMD_RET_USAGE;
+	}
+	return 0;
+}
+
 static cmd_tbl_t cmd_nbi_sub[] = {
 	U_BOOT_CMD_MKENT(init, 1, 1, do_nbi_init, "", ""),
-	U_BOOT_CMD_MKENT(usid, 1, 1, do_nbi_usid, "", ""),
+	U_BOOT_CMD_MKENT(mac,  1, 1, do_mac_info, "", ""),
 	U_BOOT_CMD_MKENT(version, 1, 1, do_nbi_version, "", ""),
-	U_BOOT_CMD_MKENT(powerstate, 1, 1, do_nbi_powerstate, "", ""),
-	U_BOOT_CMD_MKENT(poweroff, 1, 1, do_nbi_poweroff, "", ""),
+	U_BOOT_CMD_MKENT(usid, 1, 1, do_nbi_usid, "", ""),
 	U_BOOT_CMD_MKENT(bootmode, 3, 1, do_nbi_bootmode, "", ""),
-	U_BOOT_CMD_MKENT(switchmac, 3, 1, do_nbi_switchmac, "", ""),
+	U_BOOT_CMD_MKENT(trigger, 4, 1, do_nbi_trigger, "", ""),
+	U_BOOT_CMD_MKENT(switch_bt, 1, 1, do_nbi_switch_bt, "", ""),
 	U_BOOT_CMD_MKENT(led, 4, 1, do_nbi_led, "", ""),
+	U_BOOT_CMD_MKENT(switchmac, 4, 1, do_nbi_switchmac, "", ""),
+	U_BOOT_CMD_MKENT(dc_out, 3, 1, do_nbi_dc_out, "", ""),
 	U_BOOT_CMD_MKENT(reset_conf, 2, 1, do_nbi_reset_conf, "", ""),
 	U_BOOT_CMD_MKENT(reset_sys, 2, 1, do_nbi_reset_sys, "", ""),
 	U_BOOT_CMD_MKENT(fan_level_set, 2, 1, do_nbi_fan_level_set, "", ""),
 	U_BOOT_CMD_MKENT(fan_auto_test, 1, 1, do_nbi_fan_auto_test, "", ""),
+	U_BOOT_CMD_MKENT(powerstate, 1, 1, do_nbi_powerstate, "", ""),
+	U_BOOT_CMD_MKENT(poweroff, 1, 1, do_nbi_poweroff, "", ""),
+	U_BOOT_CMD_MKENT(boot_flag, 1, 1, do_nbi_boot_flag, "", ""),
+	U_BOOT_CMD_MKENT(link, 1, 1, do_nbi_link, "", ""),
+	U_BOOT_CMD_MKENT(link_5v_en, 3, 1, do_nbi_link_en_5v, "", ""),
 	U_BOOT_CMD_MKENT(wol_init, 1, 1, do_nbi_wol_init, "", ""),
-	U_BOOT_CMD_MKENT(sys_status, 1, 1, do_nbi_sys_status, "", ""),
-	U_BOOT_CMD_MKENT(switch_bt, 1, 1, do_nbi_switch_bt, "", ""),
 	U_BOOT_CMD_MKENT(get_pcie_wol, 1, 1, do_nbi_get_pcie_wol, "", ""),
-	U_BOOT_CMD_MKENT(trigger, 4, 1, do_nbi_trigger, "", ""),
 	U_BOOT_CMD_MKENT(forcereset, 4, 1, do_kbi_forcereset, "", ""),
 };
 
@@ -1083,19 +1107,25 @@ static int do_nbi(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 static char nbi_help_text[] =
 		"[function] [mode] [write|read] <value>\n"
 		"\n"
+		"nbi mac - read all mac addr\n"
 		"nbi version - read version information\n"
 		"nbi usid - read usid information\n"
+		"nbi bootmode w/r spi/emmc/sd\n"
+		"nbi switch_bt\n"
+		"nbi led user w/r <off|on|breathe|heartbeat>\n"
+		"nbi switchmac mac[1|2|3] w/r 0/1\n"
+		"nbi dc_out w/r [0|1|2]\n"
+		"nbi reset_conf [0|f0]\n"
+		"nbi reset_sys [0|1|2]\n"
+		"nbi fan_level_set [0-9]\n"
+		"nbi fan_auto_test\n"
+		"nbi powerstate\n"
+		"nbi boot_flag\n"
+		"nbi link\n"
+		"nbi link_5v_en w/r [0/1]\n"
 		"\n"
-		"nbi led [systemoff|systemon] w <off|on|breathe|heartbeat> - set blue led mode\n"
-		"nbi led [systemoff|systemon] r - read blue led mode\n"
-		"nbi led user w <off|on|breathe|heartbeat>"
-		"nbi led user r read blue led mode"
-		"\n"
-		"nbi bootmode w <emmc|spi> - set bootmode to emmc or spi\n"
-		"nbi bootmode r - read current bootmode\n"
-		"\n"
-		"nbi trigger [wol|rtc|ir|dcin] w <0|1> - disable/enable boot trigger\n"
-		"nbi trigger [wol|rtc|ir|dcin] r - read mode of a boot trigger";
+		"nbi trigger [board_wol|nlink_wol|rtc|dcin|mcu_en_sleep|wdt] w <0|1> - disable/enable boot trigger\n"
+		"nbi trigger [board_wol|nlink_wol|rtc|dcin|mcu_en_sleep|wdt] r - read mode of a boot trigger";
 
 
 U_BOOT_CMD(
