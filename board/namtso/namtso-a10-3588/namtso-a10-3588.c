@@ -124,6 +124,32 @@ int board_set_lcd_enable(void)
 	return 0;
 }
 
+#define EDP_HPD_GPIO	(37)
+int board_set_edp_lcd_enable(void)
+{
+	int ret = -1;
+	int value = -1;
+
+	ret = gpio_request(EDP_HPD_GPIO, "edp_hpd_gpio");
+	if (ret) {
+		printf("gpio_request failed\n");
+	}
+
+	gpio_direction_input(EDP_HPD_GPIO);
+	value = gpio_get_value(EDP_HPD_GPIO);
+	printf("edp hdp gpio get value: [%d]\n", value);
+
+	if (!value) {
+		printf("disable edp panel.\n");
+		run_command("fdt set /edp@fdec0000 status disable", 0);
+		run_command("fdt set /edp@fdec0000/ports/port@0/endpoint@1 status disable", 0);
+		run_command("fdt set /display-subsystem/route/route-edp0 status disable", 0);
+		run_command("fdt set /phy@fed60000 status disable", 0);
+	}
+
+	return 0;
+}
+
 int board_init_lcd(void)
 {
 	unsigned long default_fdt_addr = 0x08300000;

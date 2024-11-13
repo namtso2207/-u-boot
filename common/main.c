@@ -40,6 +40,7 @@ static void run_preboot_environment_command(void)
 #endif /* CONFIG_PREBOOT */
 }
 
+int board_set_edp_lcd_enable(void);
 /* We come here after U-Boot is initialised and ready to process commands */
 void main_loop(void)
 {
@@ -54,6 +55,7 @@ void main_loop(void)
 	cli_init();
 
 	run_preboot_environment_command();
+	board_set_edp_lcd_enable();
 
 #if defined(CONFIG_UPDATE_TFTP)
 	update_tftp(0UL, NULL, NULL);
